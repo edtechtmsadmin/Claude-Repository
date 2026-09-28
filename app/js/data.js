@@ -26,6 +26,7 @@
       results: {},
       dates: {},
       templates: [],
+      passages: [],             // reading passages for the phone app
       ui: {},
     };
   }
@@ -454,6 +455,57 @@
     setResult(state, learnerId, period, lang, { x: Object.assign({}, cur.x || {}, { [key]: value }) });
   }
 
+  // ---------- reading passages (sent to the phone app) ----------
+  // A word is a run of letters/digits; apostrophes and hyphens inside it keep it one word
+  // ("isn't", "mag-aaral"). The phone app gets this same list, so both count alike.
+  const WORD_RE = /[\p{L}\p{N}]+(?:['’\-][\p{L}\p{N}]+)*/gu;
+  function passageWords(text) { return String(text || '').match(WORD_RE) || []; }
+  function passageSentences(text) { return String(text || '').split(/[.!?]+(?=\s|$)/).filter(x => passageWords(x).length).length; }
+  function newPassage(language) {
+    return { id: uid('p'), language: language || 'English', grade: '', set: 'A', type: 'oral', title: '', text: '', questions: [], updated: Date.now() };
+  }
+  function newQuestion() { return { id: uid('q'), type: 'Literal', text: '', choices: ['', '', '', ''], answer: null, expected: '' }; }
+  // the file the phone app reads: everything it needs to show, listen and check
+  function passagePack(state, list) {
+    return {
+      app: 'phil-iri-recorder', kind: 'passages', version: 1, exportedAt: new Date().toISOString(),
+      school: { name: state.school.name, id: state.school.id }, sy: state.sy,
+      passages: (list || state.passages || []).map(p => {
+        const words = passageWords(p.text);
+        return {
+          id: p.id, language: p.language, grade: p.grade, set: p.set, type: p.type, title: p.title,
+          text: p.text, words, wordCount: words.length,
+          questions: (p.questions || []).map((q, i) => {
+            // empty choice boxes are left out; the answer points into the list that remains
+            const kept = (q.choices || []).map((c, k) => [String(c || '').trim(), k]).filter(([c]) => c);
+            const choices = kept.map(([c]) => c);
+            const at = kept.findIndex(([, k]) => k === q.answer);
+            return { id: q.id, number: i + 1, type: q.type, text: q.text, choices, answer: at >= 0 ? at : null, expected: q.expected || '' };
+          }),
+        };
+      }),
+    };
+  }
+  // bring in a passages file (from another teacher or the phone): same id replaces, new ones are added
+  function importPassages(state, json) {
+    if (!json || json.kind !== 'passages' || !Array.isArray(json.passages)) throw new Error('This is not a Phil-IRI passages file.');
+    state.passages = state.passages || [];
+    let added = 0, updated = 0;
+    for (const x of json.passages) {
+      const p = Object.assign(newPassage(x.language), {
+        id: x.id || uid('p'), language: x.language === 'Filipino' ? 'Filipino' : 'English', grade: String(x.grade || ''), set: x.set || '',
+        type: x.type === 'gst' ? 'gst' : 'oral', title: x.title || '', text: x.text || '', updated: Date.now(),
+        questions: (x.questions || []).map(q => {
+          const choices = (q.choices || []).slice(0, 4); while (choices.length < 4) choices.push('');
+          return Object.assign(newQuestion(), { id: q.id || uid('q'), type: q.type || 'Literal', text: q.text || '', choices, answer: q.answer ?? null, expected: q.expected || '' });
+        }),
+      });
+      const i = state.passages.findIndex(y => y.id === p.id);
+      if (i >= 0) { state.passages[i] = p; updated++; } else { state.passages.push(p); added++; }
+    }
+    return { added, updated };
+  }
+
   // ---------- samples ----------
   function sampleState() {
     const st = emptyState();
@@ -497,5 +549,6 @@
     fullName, sortLearners, result, setResult, computed,
     buildWrites, missingResults, groupLearners, sampleState,
     extraValue, withTotals, importFound, parseName, setExtra, singleValue,
+    passageWords, passageSentences, newPassage, newQuestion, passagePack, importPassages,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -26,7 +26,7 @@
   function save() {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
-      state.ui = { view: ui.view, form: ui.form, classId: ui.classId, grade: ui.grade, period: ui.period, lang: ui.lang };
+      state.ui = { view: ui.view, form: ui.form, classId: ui.classId, grade: ui.grade, period: ui.period, lang: ui.lang, pLang: ui.pLang };
       Data.kvSet('state', state);
     }, 250);
   }
@@ -140,6 +140,7 @@
     // the file switcher and the Save / Excel / More buttons live in the top bar
     const f0 = currentForm();
     $('#topbar-actions').innerHTML = (onWork && f0 ? workActions(f0) : '')
+      + (onWork ? `<button class="btn quiet" type="button" data-act="go-passages">Passages</button>` : '')
       + `<button class="btn quiet" type="button" data-act="${onWork ? 'go-settings' : 'go-fill'}" id="settings-btn">${onWork ? 'Settings' : '‹ Back to my forms'}</button>`;
     const files = state.templates.filter(t => t.sheets.some(usable));
     $('#topbar-files').innerHTML = onWork && f0 ? `
@@ -151,6 +152,7 @@
     const v = $('#view');
     if (ui.view === 'adjust' && ui.tplId) { v.innerHTML = '<div class="empty">Opening…</div>'; renderMapper(); return; }
     if (ui.view === 'settings') { v.innerHTML = viewSettings() + viewClasses(); return; }
+    if (ui.view === 'passages') { v.innerHTML = viewPassages(); return; }
     ui.view = 'fill';
     v.innerHTML = viewFill();
   }
@@ -951,6 +953,251 @@
     return t ? t.sheets[ui.sheetIdx] : null;
   }
 
+  // ================= Reading passages =================
+  // Kept here so the phone app can be given the exact text the learner reads.
+  const SETS = ['A', 'B', 'C', 'D'];
+  const QTYPES = ['Literal', 'Inferential', 'Critical'];
+  const PTYPE_LABEL = { oral: 'Oral reading', gst: 'Group Screening Test (GST)' };
+  const passageList = () => (state.passages = state.passages || []);
+  const byGradeSet = (a, b) => (+a.grade || 99) - (+b.grade || 99) || String(a.set).localeCompare(String(b.set)) || a.title.localeCompare(b.title);
+  function passageCount(text) {
+    const w = Data.passageWords(text).length, s = Data.passageSentences(text);
+    return `<b>${w}</b> word${w === 1 ? '' : 's'} · ${s} sentence${s === 1 ? '' : 's'}`;
+  }
+  function viewPassages() {
+    const list = passageList();
+    if (ui.pImport) return importPanel(ui.pImport);
+    if (ui.passageId) {
+      const p = list.find(x => x.id === ui.passageId);
+      if (p) return passageEditor(p);
+      ui.passageId = null;
+    }
+    const lang = ui.pLang || 'English';
+    const count = l => list.filter(p => p.language === l).length;
+    const shown = list.filter(p => p.language === lang && (!ui.pGrade || p.grade === ui.pGrade)).sort(byGradeSet);
+    const card = p => {
+      const w = Data.passageWords(p.text).length, q = (p.questions || []).length;
+      return `<button type="button" class="passage-card" data-act="open-passage" data-id="${p.id}">
+        <span class="pc-tags"><span class="pc-grade">${p.grade ? 'Grade ' + esc(p.grade) : 'No grade'}</span>${p.set ? `<span class="pc-set">Set ${esc(p.set)}</span>` : ''}<span class="pc-type">${p.type === 'gst' ? 'GST' : 'Oral'}</span></span>
+        <b>${esc(p.title || 'Untitled passage')}</b>
+        <span class="pc-text" lang="${p.language === 'Filipino' ? 'fil' : 'en'}">${esc(p.text.slice(0, 180)) || '<i>No text yet</i>'}</span>
+        <span class="pc-meta">${w} words · ${q} question${q === 1 ? '' : 's'}</span>
+      </button>`;
+    };
+    return `
+      <div class="head"><div><h1>Reading passages</h1>
+        <p>Type or paste the Phil-IRI passages and their questions here, in Filipino and English. They are sent to the phone app, so it knows exactly what the learner is reading.</p></div></div>
+      <div class="controls">
+        <div class="pill-field"><span>Language</span>${seg('plang', ['Filipino', 'English'], lang, { Filipino: `Filipino (${count('Filipino')})`, English: `English (${count('English')})` })}</div>
+        <label class="pill-field"><span>Grade</span><select id="p-grade-filter">${options([['', 'All grades']].concat(GRADES.map(g => [g, 'Grade ' + g])), ui.pGrade || '')}</select></label>
+        <span class="controls-grow"></span>
+        <details class="fb-more">
+          <summary class="btn">Phone app<span class="caret" aria-hidden="true"></span></summary>
+          <div class="fb-menu stack">
+            <button class="btn" type="button" data-act="export-passages">Save passages file for the phone</button>
+            <span class="btn file-btn">Bring in a passages file…<input type="file" id="passages-file" accept=".json,application/json"></span>
+            <p class="muted small">The file holds every passage in both languages, its words and its questions. Copy it to the phone app. A passages file from a colleague can be brought in here too.</p>
+          </div>
+        </details>
+        <span class="btn file-btn">Bring in from PDF or Word…<input type="file" class="passage-doc" accept="${DOC_ACCEPT}"></span>
+        <button class="btn primary" type="button" data-act="add-passage">+ Add passage</button>
+      </div>
+      ${shown.length ? `<div class="passage-grid">${shown.map(card).join('')}</div>` : `
+        <div class="card empty-card">
+          <b>No ${esc(lang)} passages${ui.pGrade ? ' for Grade ' + esc(ui.pGrade) : ''} yet</b>
+          <span class="muted">Add the passages from the Phil-IRI booklet: Sets A to D for each grade, with the comprehension questions. Type or paste the text, or bring it in from a PDF or Word file. Pictures are not accepted.</span>
+          <div class="row" style="justify-content:center">
+            <span class="btn file-btn">Bring in from PDF or Word…<input type="file" class="passage-doc" accept="${DOC_ACCEPT}"></span>
+            <button class="btn primary" type="button" data-act="add-passage">+ Add ${esc(lang)} passage</button></div>
+        </div>`}`;
+  }
+  function passageEditor(p) {
+    const langAttr = p.language === 'Filipino' ? 'fil' : 'en';
+    const q = (x, i) => {
+      const hasChoices = (x.choices || []).some(c => c.trim());
+      return `<li class="q-item" data-qi="${i}">
+        <div class="q-top">
+          <span class="q-num">${i + 1}</span>
+          <select data-qf="${i}:type" aria-label="Question type">${options(QTYPES, x.type)}</select>
+          <span class="controls-grow"></span>
+          <button class="btn small quiet" type="button" data-act="move-question" data-i="${i}" data-d="-1" ${i === 0 ? 'disabled' : ''} aria-label="Move up">↑</button>
+          <button class="btn small quiet" type="button" data-act="move-question" data-i="${i}" data-d="1" ${i === p.questions.length - 1 ? 'disabled' : ''} aria-label="Move down">↓</button>
+          <button class="btn small quiet danger" type="button" data-act="del-question" data-i="${i}">Remove</button>
+        </div>
+        <textarea rows="2" data-qf="${i}:text" lang="${langAttr}" placeholder="Question ${i + 1}">${esc(x.text)}</textarea>
+        <details class="q-choices"${hasChoices || p.type === 'gst' ? ' open' : ''}>
+          <summary>Answer choices <span class="muted small">· tick the correct one</span></summary>
+          <div class="choice-grid">${[0, 1, 2, 3].map(c => `
+            <label class="choice"><input type="radio" name="ans-${x.id}" data-qf="${i}:answer" value="${c}" ${x.answer === c ? 'checked' : ''} aria-label="Correct answer ${'abcd'[c]}">
+              <span>${'abcd'[c]}.</span><input type="text" data-qf="${i}:c${c}" lang="${langAttr}" value="${esc((x.choices || [])[c] || '')}"></label>`).join('')}
+          </div>
+        </details>
+        <label class="field"><span>Expected answer (for questions answered aloud, optional)</span><input type="text" data-qf="${i}:expected" lang="${langAttr}" value="${esc(x.expected)}"></label>
+      </li>`;
+    };
+    return `
+      <div class="head"><div>
+        <button class="btn quiet small back" type="button" data-act="close-passage">‹ All passages</button>
+        <h1 id="p-heading">${esc(p.title || 'New passage')}</h1></div>
+        <div class="row">
+          <button class="btn danger" type="button" data-act="del-passage">Delete passage</button>
+          <button class="btn primary" type="button" data-act="close-passage">Done</button>
+        </div>
+      </div>
+      <div class="passage-edit">
+        <div class="card">
+          <div class="grid2 p-fields">
+            <label class="field"><span>Title</span><input type="text" data-pf="title" lang="${langAttr}" value="${esc(p.title)}" placeholder="e.g. Ang Batang Masipag"></label>
+            <label class="field"><span>Language</span><select data-pf="language">${options(['Filipino', 'English'], p.language)}</select></label>
+            <label class="field"><span>Grade level</span><select data-pf="grade">${options([['', '–']].concat(GRADES.map(g => [g, 'Grade ' + g])), p.grade)}</select></label>
+            <label class="field"><span>Set</span><select data-pf="set">${options(SETS.map(s => [s, 'Set ' + s]).concat(p.set && !SETS.includes(p.set) ? [[p.set, p.set]] : []), p.set)}</select></label>
+            <label class="field"><span>Used for</span><select data-pf="type">${options(Object.entries(PTYPE_LABEL), p.type)}</select></label>
+          </div>
+          <div class="p-text-head">
+            <span class="p-text-label">Passage text</span>
+            <span class="controls-grow"></span>
+            <button class="btn small quiet" type="button" data-act="tidy-passage" title="Joins lines that were cut by the page, keeps paragraphs">Fix line breaks</button>
+            <span class="btn small file-btn">Bring in from PDF or Word…<input type="file" class="passage-doc" accept="${DOC_ACCEPT}"></span>
+          </div>
+          <label class="field"><span class="visually-hidden">Passage text</span>
+            <textarea class="passage-text" data-pf="text" rows="12" lang="${langAttr}" placeholder="Type or paste the passage exactly as it is printed in the booklet.">${esc(p.text)}</textarea></label>
+          <p class="p-count" id="p-count">${passageCount(p.text)} <span class="muted">· the phone app will listen for these words in this order</span></p>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Comprehension questions</h2><span class="muted small">Literal, inferential and critical, as in the Phil-IRI booklet</span></div>
+          ${p.questions.length ? `<ol class="q-list">${p.questions.map(q).join('')}</ol>` : '<p class="muted">No questions yet.</p>'}
+          <div class="row"><button class="btn" type="button" data-act="add-question">+ Add question</button></div>
+        </div>
+      </div>`;
+  }
+  // text from a PDF / Word / text file: the teacher picks pages and trims before using it
+  const DOC_ACCEPT = '.pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain';
+  const importText = im => im.pages.slice(im.from - 1, im.to).filter(x => x.trim()).join('\n\n');
+  function importPanel(im) {
+    const n = im.pages.length;
+    const pageOpts = Array.from({ length: n }, (_, i) => [i + 1, 'Page ' + (i + 1)]);
+    const target = im.target && currentPassage();
+    return `
+      <div class="head"><div>
+        <button class="btn quiet small back" type="button" data-act="cancel-import">‹ Cancel</button>
+        <h1>Bring in a passage</h1>
+        <p>From <b>${esc(im.name)}</b>. Delete anything that is not part of the passage, such as page numbers, headings or the questions, then press “${target ? 'Use this text' : 'Make a passage'}”.</p></div>
+      </div>
+      <div class="card">
+        ${n > 1 ? `<div class="row imp-pages">
+          <label class="pill-field"><span>From</span><select id="imp-from">${options(pageOpts, im.from)}</select></label>
+          <label class="pill-field"><span>To</span><select id="imp-to">${options(pageOpts, im.to)}</select></label>
+          <span class="muted small">${n} pages in this PDF. Pick the pages where the passage is.</span></div>` : ''}
+        <textarea class="passage-text" id="imp-text" rows="16">${esc(im.text)}</textarea>
+        <p class="p-count" id="imp-count">${passageCount(im.text)}</p>
+        <div class="row">
+          <button class="btn primary" type="button" data-act="use-import">${target ? 'Use this text' : 'Make a passage'}</button>
+          <button class="btn small quiet" type="button" data-act="tidy-import">Fix line breaks</button>
+          <button class="btn quiet" type="button" data-act="cancel-import">Cancel</button>
+        </div>
+      </div>`;
+  }
+  async function startImport(input) {
+    const file = input.files[0];
+    input.value = '';
+    if (!file) return;
+    if (DocText.kindOf(file) === 'picture') { toast('Pictures cannot be used. Please paste the passage as text, or bring in a PDF or Word file.'); return; }
+    toast('Reading ' + file.name + '…');
+    try {
+      const { pages } = await DocText.read(file);
+      const first = pages.findIndex(p => p.trim()) + 1;
+      ui.pImport = { name: file.name, pages, from: first, to: pages.length > 1 ? first : pages.length, target: ui.passageId || null };
+      ui.pImport.text = importText(ui.pImport);
+      $('#toast').hidden = true;
+      render(); window.scrollTo(0, 0);
+    } catch (err) { toast(err.message || 'That file could not be read.'); }
+  }
+  function useImport() {
+    const im = ui.pImport;
+    let text = ($('#imp-text') ? $('#imp-text').value : im.text).trim();
+    if (!text) { toast('There is no text to use.'); return; }
+    let p = im.target && passageList().find(x => x.id === im.target);
+    if (!p) {
+      p = Data.newPassage(ui.pLang || 'English');
+      if (ui.pGrade) p.grade = ui.pGrade;
+      // a short first line is most likely the title
+      const m = /^([^\n]*)\n+([\s\S]*)$/.exec(text);
+      if (m && m[2].trim() && m[1].length <= 70 && Data.passageWords(m[1]).length <= 10 && !/[.!?]$/.test(m[1].trim())) { p.title = m[1].trim(); text = m[2].trim(); }
+      passageList().push(p);
+    }
+    p.text = text; p.updated = Date.now();
+    ui.passageId = p.id; ui.pImport = null;
+    save(); render(); window.scrollTo(0, 0);
+    toast('Passage text brought in. Check it against the booklet.');
+  }
+  function passageAct(act, b) {
+    const p = currentPassage();
+    if (act === 'add-passage') {
+      const np = Data.newPassage(ui.pLang || 'English');
+      if (ui.pGrade) np.grade = ui.pGrade;
+      passageList().push(np); ui.passageId = np.id;
+    } else if (act === 'open-passage') ui.passageId = b.dataset.id;
+    else if (act === 'close-passage') {
+      // an untouched new passage is not kept
+      if (p && !p.title.trim() && !p.text.trim() && !p.questions.length) state.passages = passageList().filter(x => x !== p);
+      else if (p) ui.pLang = p.language;
+      ui.passageId = null;
+    } else if (act === 'del-passage') {
+      if (!armed(b, 'Click again to delete')) return true;
+      state.passages = passageList().filter(x => x !== p); ui.passageId = null; toast('Passage deleted.');
+    } else if (act === 'add-question') {
+      p.questions.push(Data.newQuestion());
+      save(); render();
+      const qs = $$('.q-item textarea'); if (qs.length) qs[qs.length - 1].focus();
+      return true;
+    } else if (act === 'del-question') {
+      if (!armed(b, 'Remove?')) return true;
+      p.questions.splice(+b.dataset.i, 1);
+    } else if (act === 'move-question') {
+      const i = +b.dataset.i, j = i + +b.dataset.d;
+      [p.questions[i], p.questions[j]] = [p.questions[j], p.questions[i]];
+    } else if (act === 'tidy-passage') {
+      const ta = $('textarea[data-pf="text"]'); ta.value = DocText.tidy(ta.value); passageInput(ta); toast('Line breaks fixed.'); return true;
+    } else if (act === 'tidy-import') {
+      const ta = $('#imp-text'); ta.value = DocText.tidy(ta.value); ui.pImport.text = ta.value; $('#imp-count').innerHTML = passageCount(ta.value); return true;
+    } else if (act === 'use-import') { useImport(); return true; }
+    else if (act === 'cancel-import') ui.pImport = null;
+    else if (act === 'export-passages') { exportPassages(); return true; }
+    else return false;
+    if (p) p.updated = Date.now();
+    save(); render(); window.scrollTo(0, 0);
+    return true;
+  }
+  async function exportPassages() {
+    const list = passageList().filter(p => p.text.trim());
+    if (!list.length) { toast('Add a passage with its text first.'); return; }
+    const pack = Data.passagePack(state, list.slice().sort((a, b) => a.language.localeCompare(b.language) || byGradeSet(a, b)));
+    const r = await saveBlob(`phil-iri-passages-${state.sy}.json`, new Blob([JSON.stringify(pack, null, 1)], { type: 'application/json' }));
+    if (r.status === 'saved') toast(`Saved ${list.length} passage${list.length === 1 ? '' : 's'} for the phone app.`);
+  }
+  function currentPassage() { return passageList().find(x => x.id === ui.passageId) || null; }
+  // typing: store as the teacher types, without redrawing (keeps the cursor in place)
+  function passageInput(t) {
+    const p = currentPassage();
+    if (!p) return false;
+    if (t.dataset.pf) {
+      const k = t.dataset.pf;
+      p[k] = t.value;
+      if (k === 'text') $('#p-count').innerHTML = passageCount(p.text) + ' <span class="muted">· the phone app will listen for these words in this order</span>';
+      if (k === 'title') $('#p-heading').textContent = p.title || 'New passage';
+    } else if (t.dataset.qf) {
+      const [i, k] = t.dataset.qf.split(':');
+      const qq = p.questions[+i];
+      if (!qq) return false;
+      if (k === 'answer') qq.answer = +t.value;
+      else if (/^c\d$/.test(k)) qq.choices[+k[1]] = t.value;
+      else qq[k] = t.value;
+    } else return false;
+    p.updated = Date.now();
+    save();
+    return true;
+  }
+
   // ================= Classes =================
   function viewClasses() {
     const list = syClasses();
@@ -1026,6 +1273,7 @@
         if (f) f.m.language = v;
       }
       else if (name === 'zoom') { ui.zoom = +v; renderMapper(); return; }
+      else if (name === 'plang') ui.pLang = v;
       save(); render();
       return;
     }
@@ -1058,6 +1306,8 @@
     if (!b) return;
     const act = b.dataset.act;
 
+    if (act === 'go-passages') { ui.view = 'passages'; ui.passageId = null; ui.pImport = null; render(); window.scrollTo(0, 0); return; }
+    if (passageAct(act, b)) return;
     if (act === 'go-settings') { ui.view = 'settings'; render(); window.scrollTo(0, 0); return; }
     if (act === 'go-fill') { ui.view = 'fill'; ui.tplId = null; ui.sel = null; save(); render(); window.scrollTo(0, 0); return; }
     if (act === 'tab') { ui.form = b.dataset.key; ui.preview = true; const f = currentForm(); if (f && f.m.language) ui.lang = f.m.language; save(); render(); return; }
@@ -1161,8 +1411,37 @@
     }
   });
 
+  document.addEventListener('input', (e) => {
+    const t = e.target;
+    if (ui.view !== 'passages') return;
+    if (t.id === 'imp-text') { ui.pImport.text = t.value; $('#imp-count').innerHTML = passageCount(t.value); return; }
+    if (t.tagName !== 'SELECT' && t.type !== 'radio' && (t.dataset.pf || t.dataset.qf)) passageInput(t);
+  });
+
   document.addEventListener('change', async (e) => {
     const t = e.target;
+    if (ui.view === 'passages') {
+      if (t.dataset.pf || t.dataset.qf) {
+        passageInput(t);
+        if (t.dataset.pf === 'language' || t.dataset.pf === 'type') render();
+        return;
+      }
+      if (t.id === 'p-grade-filter') { ui.pGrade = t.value; render(); return; }
+      if (t.classList.contains('passage-doc')) { await startImport(t); return; }
+      if (t.id === 'imp-from' || t.id === 'imp-to') {
+        const im = ui.pImport;
+        im[t.id === 'imp-from' ? 'from' : 'to'] = +t.value;
+        if (im.to < im.from) { if (t.id === 'imp-from') im.to = im.from; else im.from = im.to; }
+        im.text = importText(im); render(); return;
+      }
+      if (t.id === 'passages-file' && t.files[0]) {
+        try {
+          const r = Data.importPassages(state, JSON.parse(await t.files[0].text()));
+          save(); render(); toast(`Brought in ${r.added} new passage${r.added === 1 ? '' : 's'}${r.updated ? `, updated ${r.updated}` : ''}.`);
+        } catch (err) { toast(err.message || 'That file could not be read.'); }
+        t.value = ''; return;
+      }
+    }
     // entry table
     if (t.closest && t.closest('table.entry') && t.dataset.ci != null && !t.classList.contains('add-name')) {
       const f = currentForm();

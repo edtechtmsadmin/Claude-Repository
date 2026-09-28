@@ -31,10 +31,14 @@
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <script src="vendor/jszip.min.js"></script>
+<script src="vendor/pdf.min.js"></script>
+<!-- PDF reader worker: kept as text and started only when a PDF is opened -->
+<script type="text/plain" id="pdf-worker-src" data-src="vendor/pdf.worker.min.js"></script>
 <script src="js/xlsx.js"></script>
 <script src="js/detect.js"></script>
 <script src="js/data.js"></script>
 <script src="js/samples.js"></script>
+<script src="js/doctext.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

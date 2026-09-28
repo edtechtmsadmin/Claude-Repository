@@ -30,6 +30,11 @@ html = html.replace(/<script src="([^"]+)"><\/script>/g, (all, src) => {
   const code = fs.readFileSync(path.join(app, src), 'utf8').replace(/<\/script/gi, '<\\/script');
   return `<script>\n${code}\n</script>`;
 });
+// code kept as text until needed (the PDF reader worker)
+html = html.replace(/<script type="text\/plain" id="([^"]+)" data-src="([^"]+)"><\/script>/g, (all, id, src) => {
+  const code = fs.readFileSync(path.join(app, src), 'utf8').replace(/<\/script/gi, '<\\/script');
+  return `<script type="text/plain" id="${id}">\n${code}\n</script>`;
+});
 fs.writeFileSync(path.join(dist, 'phil-iri-recorder.html'), html);
 
 if (process.argv.includes('--body')) {

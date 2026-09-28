@@ -368,6 +368,48 @@ td.mk-sel { outline: 3px solid #2552b8 !important; outline-offset: -3px; }
   .btn, .tab, .seg button { transition: background-color .15s, border-color .15s, color .15s, box-shadow .2s; }
 }
 
+/* ---------- reading passages ---------- */
+.passage-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.passage-card {
+  text-align: left; font: inherit; color: var(--ink); cursor: pointer; display: flex; flex-direction: column; gap: 6px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; box-shadow: var(--shadow-sm); min-width: 0;
+}
+.passage-card:hover, .passage-card:focus-visible { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent), var(--shadow); }
+.passage-card b { font-size: 1rem; font-weight: 600; }
+.pc-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.pc-tags > span { font-size: .72rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--surface-3); color: var(--muted); }
+.pc-tags .pc-grade { background: var(--accent-soft); color: var(--accent); }
+.pc-tags .pc-set { background: var(--pencil-soft); color: var(--check); }
+.pc-text { font-size: .86rem; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-weight: 300; }
+.pc-meta { font-size: .78rem; color: var(--muted); margin-top: auto; }
+.empty-card { align-items: center; text-align: center; padding: 34px 20px; }
+.empty-card .muted { max-width: 60ch; }
+.head .back { margin: 0 0 4px -10px; }
+.passage-edit { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 980px) { .passage-edit { grid-template-columns: minmax(0, 1fr); } }
+.p-fields { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.p-fields label.field:first-child { grid-column: 1 / -1; }
+.p-text-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: -6px; }
+.p-text-label { font-size: .84rem; font-weight: 500; color: var(--muted); }
+textarea.passage-text { width: 100%; resize: vertical; min-height: 220px; font-size: 1.02rem; line-height: 1.7; padding: 12px 14px; }
+.p-count { font-size: .86rem; }
+.p-count b { font-variant-numeric: tabular-nums; color: var(--accent); }
+.q-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.q-item { border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.q-top { display: flex; align-items: center; gap: 6px; }
+.q-top select { padding: 4px 8px; font-size: .85rem; border-radius: 999px; }
+.q-num { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: .85rem; flex: none; }
+.q-item textarea { width: 100%; resize: vertical; }
+.q-choices > summary { cursor: pointer; font-size: .84rem; font-weight: 500; color: var(--muted); }
+.choice-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 6px 10px; margin-top: 8px; }
+.choice { display: flex; align-items: center; gap: 6px; }
+.choice input[type="radio"] { accent-color: var(--sure); width: 17px; height: 17px; flex: none; }
+.choice > span { font-weight: 600; color: var(--muted); font-size: .85rem; }
+.choice input[type="text"] { flex: 1 1 auto; min-width: 0; padding: 5px 8px; }
+.choice:has(input[type="radio"]:checked) input[type="text"] { border-color: var(--sure); background: var(--sure-soft); }
+.imp-pages { margin-bottom: 2px; }
+.btn .caret { width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); margin-left: 2px; }
+
 /* ---------- glass: frosted panels over a soft colour wash ---------- */
 :root {
   --glass: rgba(255, 255, 255, .58);
@@ -402,7 +444,7 @@ body {
     var(--ground);
   background-attachment: fixed;
 }
-.topbar, .card, .controls, .panel, .stat, .steps li, .drop, .tab:not([aria-selected="true"]) {
+.topbar, .card, .controls, .panel, .stat, .steps li, .drop, .passage-card, .tab:not([aria-selected="true"]) {
   background: var(--glass);
   -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
   border-color: var(--glass-edge);

@@ -45,7 +45,9 @@ separately from templates, so it carries over to next year's template.
 | `app/index.html`, `app/styles.css` | Page shell and styles (top bar, tabs, printed-page view, print CSS) |
 | `app/js/xlsx.js` | Reads .xlsx (styles, theme colours, merges, images, shared formulas, page setup), draws sheets as HTML, splits into printed pages (`paginate`, `renderPages`, `effectivePage`), on-screen formula evaluator (`computeFormulas`), surgical fill (`fillWorkbook`) |
 | `app/js/detect.js` | Works out each sheet: header fields (label: value, ____ blanks, (PLACEHOLDER), year/period/language words, Pre-Test/Post Test tick slots, signature lines), learner tables (male/female parts, "Put 1" columns, own columns like GST Literal/Inferential/Total/Score < 27), count tables (grade/school summaries), one-learner forms |
-| `app/js/data.js` | State, IndexedDB storage, learners/results, turning data into cell writes (`buildWrites`), importing learners from an already filled form |
+| `app/js/data.js` | State, IndexedDB storage, learners/results, turning data into cell writes (`buildWrites`), importing learners from an already filled form, reading passages (word list, phone file) |
+| `app/js/doctext.js` | Text out of PDF (pdf.js), Word .docx and .txt for passages; refuses pictures and scanned PDFs |
+| `app/vendor/` | JSZip, pdf.js 3.11 (+ worker, Apache-2.0 licence) |
 | `app/js/app.js` | Screens: Fill in forms (pill tabs, controls row, entry table, details card, Save menu: whole file / only this form), Settings (school, classes, backup), Adjust (manual mapping). The older type-on-form/preview code is still there but unused |
 | `electron/` | Desktop shell: save dialog, "Open in Excel" |
 | `tools/build.mjs` | Builds `dist/phil-iri-recorder.html` (single offline file) and `app/js/samples.js` |
@@ -116,6 +118,41 @@ Main screen now (all tested in headless Chromium with both JHS templates):
   blur is unsupported or the user asks for reduced transparency.
 - Light and dark themes, Lexend font. There is no horizontal scroll at phone
   width.
+
+### Reading passages (preparation for the phone app)
+
+"Passages" button in the top bar opens `viewPassages()` in `app/js/app.js`.
+- Passages are kept in `state.passages`, so they go into backups too. Each
+  passage has: `{id, language: 'Filipino'|'English', grade, set: A–D,
+  type: 'oral'|'gst', title, text, questions[{id, type: Literal|Inferential|Critical,
+  text, choices[4], answer (index), expected}]}`.
+- Ways to bring text in: type it, paste it ("Fix line breaks" joins lines wrapped
+  by a page), or bring in a PDF / Word .docx / .txt file (`app/js/doctext.js`).
+  - The PDF reader is pdf.js 3.11 (`app/vendor/pdf.min.js`). Its worker is
+    kept as text in the page and started only when a PDF is opened.
+  - For a PDF the teacher picks the pages, then trims the text.
+  - Lone page numbers are dropped, and a short first line becomes the title.
+  - Pictures and scanned PDFs (no text) are refused on purpose. So are old
+    .doc files, with a message to save them as .docx or PDF.
+- "Phone app › Save passages file for the phone" saves
+  `phil-iri-passages-<SY>.json`, made by `Data.passagePack`. Its fields are
+  `{app, kind:'passages', version:1, school, sy, passages[{..., text, words[], wordCount,
+  questions[{number, type, text, choices[], answer, expected}]}]}`.
+  - `words` is the exact word list (`Data.passageWords`: apostrophes and
+    hyphens stay inside a word, e.g. "mag-aaral"). The phone app should use it
+    as-is when it follows the reading.
+  - The same file can be brought back in (`Data.importPassages`: the same id
+    replaces the passage, new ids are added).
+- Plan for the phone app (from the discussion):
+  - It follows the reading live on the phone and saves only the results, not
+    the voice.
+  - Speech recognition is guided by the passage.
+  - Each word gets a traffic light (green sure, red miscue, yellow "please
+    check"), followed by a quick check screen for the teacher.
+  - It keeps short clips of the unsure words only until the teacher checks
+    them.
+  - Before the test: a warm-up sentence and a noise check.
+  - Results are sent back to this desktop app.
 
 Next steps:
 1. Test with the teacher's GST / other templates when they are sent.
