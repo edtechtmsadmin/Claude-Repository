@@ -211,13 +211,19 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent);
 .wh-title { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .wh-title h1 { font-size: clamp(1.4rem, 2.4vw, 1.9rem); }
 .wh-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.sheet-tabs { display: flex; gap: 2px; overflow-x: auto; border-bottom: 1px solid var(--line); scrollbar-width: thin; }
+/* form tabs: pill-shaped, the chosen one filled and glowing */
+.sheet-tabs { display: flex; gap: 10px; overflow-x: auto; padding: 6px 4px 12px; scrollbar-width: thin; }
 .tab {
-  border: 0; background: none; color: var(--muted); font-weight: 500; padding: 10px 14px 12px; cursor: pointer; white-space: nowrap;
-  border-bottom: 3px solid transparent; margin-bottom: -1px;
+  flex: none; border: 1.5px solid var(--line-strong); background: var(--surface); color: var(--muted);
+  font-weight: 500; padding: 9px 20px; border-radius: 999px; cursor: pointer; white-space: nowrap;
+  box-shadow: var(--shadow-sm);
 }
-.tab:hover { color: var(--ink); }
-.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--pencil); font-weight: 600; }
+.tab:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.tab[aria-selected="true"] {
+  color: var(--accent-ink); background: var(--accent); border-color: var(--accent); font-weight: 600;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pencil) 70%, transparent), 0 0 18px 2px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.tab[aria-selected="true"]:hover { color: var(--accent-ink); background: var(--accent); }
 .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; }
 .pill-field { display: inline-flex; align-items: center; gap: 10px; }
 .pill-field > span { font-size: .8rem; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
@@ -321,7 +327,7 @@ td.mk-head { box-shadow: inset 0 0 0 999px rgba(37, 82, 184, .10); }
 td.mk-sel { outline: 3px solid #2552b8 !important; outline-offset: -3px; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .btn, .tab, .seg button { transition: background-color .15s, border-color .15s, color .15s, box-shadow .15s; }
+  .btn, .tab, .seg button { transition: background-color .15s, border-color .15s, color .15s, box-shadow .2s; }
 }
 
 </style>
