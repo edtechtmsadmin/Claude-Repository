@@ -25,7 +25,12 @@ fs.writeFileSync(path.join(app, 'js', 'samples.js'), js);
 
 // 2. inline css + scripts into one html file
 let html = fs.readFileSync(path.join(app, 'index.html'), 'utf8');
-html = html.replace(/<link rel="stylesheet" href="styles\.css">/, () => `<style>\n${fs.readFileSync(path.join(app, 'styles.css'), 'utf8')}\n</style>`);
+// local stylesheets are inlined; fonts they point to become data: URLs so the one file works offline
+html = html.replace(/<link rel="stylesheet" href="([\w.-]+\.css)">/g, (all, href) => {
+  const css = fs.readFileSync(path.join(app, href), 'utf8').replace(/url\((fonts\/[\w.-]+\.woff2)\)/g, (m, f) =>
+    `url(data:font/woff2;base64,${fs.readFileSync(path.join(app, f)).toString('base64')})`);
+  return `<style>\n${css}\n</style>`;
+});
 html = html.replace(/<script src="([^"]+)"><\/script>/g, (all, src) => {
   const code = fs.readFileSync(path.join(app, src), 'utf8').replace(/<\/script/gi, '<\\/script');
   return `<script>\n${code}\n</script>`;

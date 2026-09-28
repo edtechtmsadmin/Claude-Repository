@@ -48,6 +48,7 @@ separately from templates, so it carries over to next year's template.
 | `app/js/data.js` | State, IndexedDB storage, learners/results, turning data into cell writes (`buildWrites`), importing learners from an already filled form, reading passages (word list, phone file) |
 | `app/js/doctext.js` | Text out of PDF (pdf.js), Word .docx and .txt for passages; refuses pictures and scanned PDFs |
 | `app/vendor/` | JSZip, pdf.js 3.11 (+ worker, Apache-2.0 licence) |
+| `app/fonts.css`, `app/fonts/` | Lexend font kept inside the app (SIL OFL); the build turns it into data: URLs |
 | `app/js/app.js` | Screens: Fill in forms (pill tabs, controls row, entry table, details card, Save menu: whole file / only this form), Settings (school, classes, backup), Adjust (manual mapping). The older type-on-form/preview code is still there but unused |
 | `electron/` | Desktop shell: save dialog, "Open in Excel" |
 | `tools/build.mjs` | Builds `dist/phil-iri-recorder.html` (single offline file) and `app/js/samples.js` |
@@ -116,7 +117,10 @@ Main screen now (all tested in headless Chromium with both JHS templates):
   tabs, menus) over a soft blue/yellow/teal colour wash. This is the "glass"
   section at the end of `app/styles.css`. It falls back to solid panels when
   blur is unsupported or the user asks for reduced transparency.
-- Light and dark themes, Lexend font. There is no horizontal scroll at phone
+- Light and dark themes, Lexend font.
+- Works fully offline, with no internet requests at all. This was tested with
+  the network switched off, from the built file and from `app/index.html`: form
+  saving, PDF/Word passages, the phone file, and the font. There is no horizontal scroll at phone
   width.
 
 ### Reading passages (preparation for the phone app)
