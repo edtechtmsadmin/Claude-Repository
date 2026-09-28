@@ -94,11 +94,12 @@ p { margin: 0; }
   max-width: min(460px, 50vw); border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px;
   padding: 7px 34px 7px 16px; font-weight: 500;
 }
-.topbar-actions { flex: none; }
-.main { padding-block: 28px 56px; padding-inline: 28px; }
-#view { display: flex; flex-direction: column; gap: 18px; max-width: 1240px; margin: 0 auto; }
+.topbar-actions { flex: none; display: flex; align-items: center; gap: 8px; }
+.topbar .btn { padding: 7px 14px; }
+.main { padding-block: 16px 40px; padding-inline: 24px; }
+#view { display: flex; flex-direction: column; gap: 12px; max-width: 1280px; margin: 0 auto; }
 .foot { max-width: 1240px; margin: 28px auto 0; text-align: center; }
-@media (max-width: 820px) {
+@media (max-width: 980px) {
   .topbar { padding: 8px 16px; flex-wrap: wrap; }
   .brand-name, .brand-sy { display: none; }
   .topbar-files { order: 3; flex-basis: 100%; justify-content: stretch; }
@@ -109,7 +110,7 @@ p { margin: 0; }
 /* ---------- building blocks ---------- */
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px 20px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 14px; }
 .card.flush { padding: 0; gap: 0; overflow: hidden; }
-.card.flush .card-head { padding: 16px 20px 12px; }
+.card.flush .card-head { padding: 10px 16px 8px; }
 .card-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
 .card.note { border-left: 4px solid var(--pencil); }
 .card.note p { max-width: 75ch; color: var(--muted); }
@@ -212,10 +213,10 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent);
 .wh-title h1 { font-size: clamp(1.4rem, 2.4vw, 1.9rem); }
 .wh-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 /* form tabs: pill-shaped, the chosen one filled and glowing */
-.sheet-tabs { display: flex; gap: 10px; overflow-x: auto; padding: 6px 4px 12px; scrollbar-width: thin; }
+.sheet-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 6px 6px 8px; scrollbar-width: thin; }
 .tab {
   flex: none; border: 1.5px solid var(--line-strong); background: var(--surface); color: var(--muted);
-  font-weight: 500; padding: 9px 20px; border-radius: 999px; cursor: pointer; white-space: nowrap;
+  font-weight: 500; font-size: .9rem; padding: 6px 16px; border-radius: 999px; cursor: pointer; white-space: nowrap;
   box-shadow: var(--shadow-sm);
 }
 .tab:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
@@ -224,10 +225,46 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--pencil) 70%, transparent), 0 0 18px 2px color-mix(in srgb, var(--accent) 55%, transparent);
 }
 .tab[aria-selected="true"]:hover { color: var(--accent-ink); background: var(--accent); }
-.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; }
-.pill-field { display: inline-flex; align-items: center; gap: 10px; }
-.pill-field > span { font-size: .8rem; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
-.pill-field select { border-radius: 999px; padding: 7px 34px 7px 14px; background: var(--surface); }
+/* one slim row: class, period, language … counts */
+.controls {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r); padding: 8px 12px; box-shadow: var(--shadow-sm);
+}
+.controls-grow { flex: 1 1 0; }
+.pill-field { display: inline-flex; align-items: center; gap: 8px; }
+.pill-field > span { font-size: .72rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
+.pill-field select { border-radius: 999px; padding: 5px 30px 5px 12px; background: var(--surface-2); font-size: .92rem; }
+.controls .seg button { padding: 4px 12px; font-size: .9rem; }
+.kind-tag { font-size: .8rem; color: var(--muted); background: var(--surface-3); padding: 4px 12px; border-radius: 999px; }
+.stat-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.sc {
+  display: inline-flex; align-items: baseline; gap: 5px; padding: 4px 11px; border-radius: 999px; font-size: .8rem; color: var(--muted);
+  background: var(--surface-3); white-space: nowrap;
+}
+.sc b { font-size: .98rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+.sc.i { background: var(--sure-soft); color: var(--sure); } .sc.i b { color: var(--sure); }
+.sc.n { background: var(--check-soft); color: var(--check); } .sc.n b { color: var(--check); }
+.sc.f { background: var(--missing-soft); color: var(--missing); } .sc.f b { color: var(--missing); }
+
+/* form details folded into one line */
+.card.details { padding: 0; gap: 0; }
+.card.details > summary {
+  display: flex; align-items: center; gap: 14px; padding: 10px 16px; cursor: pointer; list-style: none; min-width: 0;
+}
+.card.details > summary::-webkit-details-marker { display: none; }
+.card.details > summary::before {
+  content: ""; width: 8px; height: 8px; flex: none; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted);
+  transform: rotate(-45deg); transition: transform .15s;
+}
+.card.details[open] > summary::before { transform: rotate(45deg); }
+.card.details > summary h2 { font-size: .95rem; flex: none; }
+.details-line { flex: 1 1 auto; min-width: 0; display: flex; gap: 14px; overflow: hidden; white-space: nowrap; font-size: .86rem; mask-image: linear-gradient(90deg, #000 85%, transparent); }
+.details-line i { font-style: normal; color: var(--muted); margin-right: 3px; }
+.card.details > .grid2, .card.details > p { padding: 0 16px; }
+.card.details > .grid2 { padding-top: 2px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px 12px; }
+.card.details .grid2 input, .card.details .grid2 select { padding: 6px 9px; }
+.card.details label.field { gap: 3px; font-size: .8rem; }
+.card.details > p { padding-bottom: 14px; padding-top: 10px; }
 .lang-tag { background: var(--accent-soft); color: var(--accent); padding: 5px 14px; border-radius: 999px; font-weight: 600; font-size: .9rem; }
 
 .fb-more { position: relative; }
@@ -252,7 +289,7 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent);
 .table-wrap { overflow-x: auto; }
 table.grid { border-collapse: separate; border-spacing: 0; width: 100%; font-size: .92rem; }
 table.grid th {
-  text-align: left; font-size: .76rem; font-weight: 600; color: var(--muted); padding: 10px 10px; background: var(--surface-2);
+  text-align: left; font-size: .74rem; font-weight: 600; color: var(--muted); padding: 7px 8px; background: var(--surface-2);
   border-bottom: 1px solid var(--line); white-space: nowrap; position: sticky; top: 0; z-index: 1;
 }
 table.grid td { padding: 3px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
@@ -343,7 +380,7 @@ td.mk-sel { outline: 3px solid #2552b8 !important; outline-offset: -3px; }
       </div>
     </div>
     <div class="topbar-files" id="topbar-files"></div>
-    <div class="topbar-actions">
+    <div class="topbar-actions" id="topbar-actions">
       <button class="btn quiet" type="button" data-act="go-settings" id="settings-btn">Settings</button>
     </div>
   </header>
@@ -2756,10 +2793,10 @@ window.SAMPLE_TEMPLATES = {
   function render() {
     $('#brand-sy').textContent = 'School year ' + state.sy;
     const onWork = ui.view === 'fill';
-    $('#settings-btn').textContent = onWork ? 'Settings' : '‹ Back to my forms';
-    $('#settings-btn').dataset.act = onWork ? 'go-settings' : 'go-fill';
-    // the file switcher lives in the top bar
+    // the file switcher and the Save / Excel / More buttons live in the top bar
     const f0 = currentForm();
+    $('#topbar-actions').innerHTML = (onWork && f0 ? workActions(f0) : '')
+      + `<button class="btn quiet" type="button" data-act="${onWork ? 'go-settings' : 'go-fill'}" id="settings-btn">${onWork ? 'Settings' : '‹ Back to my forms'}</button>`;
     const files = state.templates.filter(t => t.sheets.some(usable));
     $('#topbar-files').innerHTML = onWork && f0 ? `
       <label class="file-switch"><span class="visually-hidden">Form file</span>
@@ -2828,49 +2865,49 @@ window.SAMPLE_TEMPLATES = {
       if (!grades.includes(String(ui.grade))) ui.grade = grades[0] || '';
       who = `<label class="pill-field"><span>Grade</span><select id="fill-grade">${options(grades.length ? grades.map(g => [g, 'Grade ' + g]) : [['', 'No classes yet']], ui.grade)}</select></label>`;
     }
-    const fitVal = ui.page.fit == null ? 'none' : ui.page.fit === false ? 'none' : ui.page.fit === true ? 'width' : ui.page.fit;
-    const saveIcon = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v9m-4-4 4 4 4-4M4 15h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     const head = `
-      <section class="work-head">
-        <div class="wh-title">
-          <p class="eyebrow">${esc(f.t.name)} · ${KIND_LABEL[kind]}</p>
-          <h1>${esc(f.m.sheetName)}</h1>
-        </div>
-        <div class="wh-actions">
-          ${kind === 'learner'
-            ? `<button class="btn primary big" type="button" data-act="save-all">${saveIcon}Save a form for every learner</button>`
-            : `<button class="btn primary big" type="button" data-act="save-file" title="Fills every form in this file and saves it as one Excel file">${saveIcon}Save filled file</button>`}
-          ${isDesktop ? '<button class="btn big" type="button" data-act="open-form">Open in Excel to print</button>' : ''}
-          <details class="fb-more">
-            <summary class="btn big" aria-label="More options">More</summary>
-            <div class="fb-menu stack">
-              ${kind !== 'learner' ? '<button class="btn" type="button" data-act="save-form">Save only this form</button>' : ''}
-              <label class="field"><span>Printing</span><select id="pg-fit">${options(FIT_OPTIONS, fitVal)}</select></label>
-              <label class="field"><span>Orientation</span><select id="pg-orient">${options([['', 'As in the form'], ['portrait', 'Portrait'], ['landscape', 'Landscape']], ui.page.orient || '')}</select></label>
-              <label class="field"><span>Paper</span><select id="pg-paper">${options(PAPER, ui.page.paper || '')}</select></label>
-              <button class="btn" type="button" data-act="open-sheet" data-tpl="${f.t.id}" data-i="${f.i}">Adjust how this form is read</button>
-              <button class="btn danger" type="button" data-act="del-tpl" data-tpl="${f.t.id}">Remove this file</button>
-            </div>
-          </details>
-        </div>
-      </section>
-      ${tabs.length > 1 ? `<nav class="sheet-tabs" role="tablist" aria-label="Forms in this file">${tabs.map(x => `<button type="button" role="tab" class="tab" data-act="tab" data-key="${x.key}" aria-selected="${x.key === f.key}">${esc(x.m.sheetName)}</button>`).join('')}</nav>` : ''}
+      <nav class="sheet-tabs" role="tablist" aria-label="Forms in this file">${tabs.map(x => `<button type="button" role="tab" class="tab" data-act="tab" data-key="${x.key}" aria-selected="${x.key === f.key}">${esc(x.m.sheetName)}</button>`).join('')}</nav>
       <div class="controls">
         ${who}
         <div class="pill-field"><span>Period</span>${seg('period', PERIODS, ui.period)}</div>
         <div class="pill-field" title="The language of this form. Results are kept separately for Filipino and English."><span>Language</span>${seg('lang', LANGS, lang)}</div>
-        <span id="save-note" class="muted small"></span>
+        <span class="controls-grow"></span>
+        ${kind === 'class' ? statStrip(f, lang) : `<span class="kind-tag">${KIND_LABEL[kind]}</span>`}
+        <span id="save-note" class="muted small" hidden></span>
       </div>
       <div id="pr-warn"></div>`;
     let body = '';
-    if (kind === 'class') body = foundBanner(f) + statStrip(f, lang) + detailsPanel(f) + fillClass(f, lang, true);
+    if (kind === 'class') body = foundBanner(f) + detailsPanel(f) + fillClass(f, lang, true);
     else if (kind === 'grade' || kind === 'school') body = detailsPanel(f) + summaryCard(f, lang);
     else if (kind === 'learner') body = `<div class="card note"><h2>One form per learner</h2><p>This form is filled once for each learner in the class, using their name and the details below. <b>Save a form for every learner</b> gives you one Excel file per learner in a .zip.</p></div>` + detailsPanel(f);
     else body = `<div class="card note"><h2>This sheet has no learner table the app can fill yet</h2><p>The details the app recognised are below and will be written into the form. Fill in the rest in Excel after saving. If this sheet should be filled by the app, use <b>More › Adjust how this form is read</b>.</p></div>` + detailsPanel(f);
     return head + body;
   }
 
-  // counts at a glance
+  // Save / Excel / More, shown in the top bar
+  function workActions(f) {
+    const kind = f.m.kind;
+    const fitVal = ui.page.fit == null ? 'none' : ui.page.fit === false ? 'none' : ui.page.fit === true ? 'width' : ui.page.fit;
+    const saveIcon = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v9m-4-4 4 4 4-4M4 15h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    return `
+      ${kind === 'learner'
+        ? `<button class="btn primary" type="button" data-act="save-all">${saveIcon}Save for every learner</button>`
+        : `<button class="btn primary" type="button" data-act="save-file" title="Fills every form in this file and saves it as one Excel workbook">${saveIcon}Save filled file</button>`}
+      ${isDesktop ? '<button class="btn" type="button" data-act="open-form" title="Open the filled file in Excel to print">Excel</button>' : ''}
+      <details class="fb-more">
+        <summary class="btn" aria-label="More options">More</summary>
+        <div class="fb-menu stack">
+          ${kind !== 'learner' ? '<button class="btn" type="button" data-act="save-form">Save only this form</button>' : ''}
+          <label class="field"><span>Printing</span><select id="pg-fit">${options(FIT_OPTIONS, fitVal)}</select></label>
+          <label class="field"><span>Orientation</span><select id="pg-orient">${options([['', 'As in the form'], ['portrait', 'Portrait'], ['landscape', 'Landscape']], ui.page.orient || '')}</select></label>
+          <label class="field"><span>Paper</span><select id="pg-paper">${options(PAPER, ui.page.paper || '')}</select></label>
+          <button class="btn" type="button" data-act="open-sheet" data-tpl="${f.t.id}" data-i="${f.i}">Adjust how this form is read</button>
+          <button class="btn danger" type="button" data-act="del-tpl" data-tpl="${f.t.id}">Remove this file</button>
+        </div>
+      </details>`;
+  }
+
+  // counts at a glance: small coloured chips
   function statStrip(f, lang) {
     const cls = currentClass(true);
     const hasLevel = f.m.lists.some(l => l.columns.some(c => c.key === 'a.level'));
@@ -2884,11 +2921,11 @@ window.SAMPLE_TEMPLATES = {
       if (r.nonReader) n.nonReader++;
       if (r.level || r.nonReader || Object.values(r.x || {}).some(v => v !== '' && v != null && v !== false)) n.entered++;
     }
-    const stat = (num, label, cls2 = '') => `<div class="stat ${cls2}"><b>${num}</b><span>${label}</span></div>`;
-    return `<div class="stats">
-      ${stat(n.all, `Learners${n.M || n.F ? ` · ${n.M} M, ${n.F} F` : ''}`)}
-      ${hasLevel ? stat(n.Independent, 'Independent', 'i') + stat(n.Instructional, 'Instructional', 'n') + stat(n.Frustration, 'Frustration', 'f') : stat(n.entered, 'With entries')}
-      ${hasFlags ? stat(n.struggling, 'Struggling readers') + stat(n.nonReader, 'Non-readers') : ''}
+    const chip = (num, label, cls2 = '', title = '') => `<span class="sc ${cls2}"${title ? ` title="${title}"` : ''}><b>${num}</b>${label}</span>`;
+    return `<div class="stat-chips" aria-label="Counts for this class">
+      ${chip(n.all, 'learners', '', n.M || n.F ? `${n.M} male, ${n.F} female` : '')}
+      ${hasLevel ? chip(n.Independent, 'Independent', 'i') + chip(n.Instructional, 'Instructional', 'n') + chip(n.Frustration, 'Frustration', 'f') : chip(n.entered, 'with entries')}
+      ${hasFlags ? chip(n.struggling, 'struggling') + chip(n.nonReader, 'non-readers') : ''}
     </div>`;
   }
 
@@ -3012,9 +3049,19 @@ window.SAMPLE_TEMPLATES = {
       if (k === 'class.grade') return `<label class="field"><span>${label}</span><select id="${id}" data-detail="${k}">${options([['', '–']].concat(GRADES.map(g => [g, 'Grade ' + g])), val)}</select></label>`;
       return `<label class="field"><span>${label}</span><input type="text" id="${id}" data-detail="${k}" value="${esc(val)}"${k === 'date' ? ` placeholder="${esc(todayText())}"` : ''}></label>`;
     }).join('');
-    return `<div class="card">
-      <div class="card-head"><h2>Form details</h2><p class="muted small">These fill the top of the form. School details are remembered for all your forms.</p></div>
-      <div class="grid2">${inputs}</div></div>`;
+    // folded into one line; open while something is still empty
+    const filled = [...keys].map(k => {
+      const [label, where, prop] = DETAIL_FIELDS[k];
+      const v = where === 'school' ? state.school[prop] : where === 'class' ? cls[prop] : ((state.dates || {})[`${cls.id}:${ui.period}`] || '');
+      return { label, v: k === 'class.grade' && v ? 'Grade ' + v : v };
+    });
+    const missing = filled.filter(x => !x.v).length;
+    const summary = filled.filter(x => x.v).map(x => `<span><i>${esc(x.label)}</i> ${esc(x.v)}</span>`).join('');
+    return `<details class="card details"${missing ? ' open' : ''}>
+      <summary><h2>Form details</h2><span class="details-line">${summary || '<span class="muted">Not filled in yet</span>'}</span>${missing ? `<span class="chip warn">${missing} to fill in</span>` : '<span class="chip ok">Complete</span>'}</summary>
+      <div class="grid2">${inputs}</div>
+      <p class="muted small">These fill the top of the form. School details are remembered for all your forms.</p>
+    </details>`;
   }
 
   // ---------- the entry table ----------

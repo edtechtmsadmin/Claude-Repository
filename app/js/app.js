@@ -137,10 +137,10 @@
   function render() {
     $('#brand-sy').textContent = 'School year ' + state.sy;
     const onWork = ui.view === 'fill';
-    $('#settings-btn').textContent = onWork ? 'Settings' : '‹ Back to my forms';
-    $('#settings-btn').dataset.act = onWork ? 'go-settings' : 'go-fill';
-    // the file switcher lives in the top bar
+    // the file switcher and the Save / Excel / More buttons live in the top bar
     const f0 = currentForm();
+    $('#topbar-actions').innerHTML = (onWork && f0 ? workActions(f0) : '')
+      + `<button class="btn quiet" type="button" data-act="${onWork ? 'go-settings' : 'go-fill'}" id="settings-btn">${onWork ? 'Settings' : '‹ Back to my forms'}</button>`;
     const files = state.templates.filter(t => t.sheets.some(usable));
     $('#topbar-files').innerHTML = onWork && f0 ? `
       <label class="file-switch"><span class="visually-hidden">Form file</span>
@@ -209,49 +209,49 @@
       if (!grades.includes(String(ui.grade))) ui.grade = grades[0] || '';
       who = `<label class="pill-field"><span>Grade</span><select id="fill-grade">${options(grades.length ? grades.map(g => [g, 'Grade ' + g]) : [['', 'No classes yet']], ui.grade)}</select></label>`;
     }
-    const fitVal = ui.page.fit == null ? 'none' : ui.page.fit === false ? 'none' : ui.page.fit === true ? 'width' : ui.page.fit;
-    const saveIcon = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v9m-4-4 4 4 4-4M4 15h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     const head = `
-      <section class="work-head">
-        <div class="wh-title">
-          <p class="eyebrow">${esc(f.t.name)} · ${KIND_LABEL[kind]}</p>
-          <h1>${esc(f.m.sheetName)}</h1>
-        </div>
-        <div class="wh-actions">
-          ${kind === 'learner'
-            ? `<button class="btn primary big" type="button" data-act="save-all">${saveIcon}Save a form for every learner</button>`
-            : `<button class="btn primary big" type="button" data-act="save-file" title="Fills every form in this file and saves it as one Excel file">${saveIcon}Save filled file</button>`}
-          ${isDesktop ? '<button class="btn big" type="button" data-act="open-form">Open in Excel to print</button>' : ''}
-          <details class="fb-more">
-            <summary class="btn big" aria-label="More options">More</summary>
-            <div class="fb-menu stack">
-              ${kind !== 'learner' ? '<button class="btn" type="button" data-act="save-form">Save only this form</button>' : ''}
-              <label class="field"><span>Printing</span><select id="pg-fit">${options(FIT_OPTIONS, fitVal)}</select></label>
-              <label class="field"><span>Orientation</span><select id="pg-orient">${options([['', 'As in the form'], ['portrait', 'Portrait'], ['landscape', 'Landscape']], ui.page.orient || '')}</select></label>
-              <label class="field"><span>Paper</span><select id="pg-paper">${options(PAPER, ui.page.paper || '')}</select></label>
-              <button class="btn" type="button" data-act="open-sheet" data-tpl="${f.t.id}" data-i="${f.i}">Adjust how this form is read</button>
-              <button class="btn danger" type="button" data-act="del-tpl" data-tpl="${f.t.id}">Remove this file</button>
-            </div>
-          </details>
-        </div>
-      </section>
-      ${tabs.length > 1 ? `<nav class="sheet-tabs" role="tablist" aria-label="Forms in this file">${tabs.map(x => `<button type="button" role="tab" class="tab" data-act="tab" data-key="${x.key}" aria-selected="${x.key === f.key}">${esc(x.m.sheetName)}</button>`).join('')}</nav>` : ''}
+      <nav class="sheet-tabs" role="tablist" aria-label="Forms in this file">${tabs.map(x => `<button type="button" role="tab" class="tab" data-act="tab" data-key="${x.key}" aria-selected="${x.key === f.key}">${esc(x.m.sheetName)}</button>`).join('')}</nav>
       <div class="controls">
         ${who}
         <div class="pill-field"><span>Period</span>${seg('period', PERIODS, ui.period)}</div>
         <div class="pill-field" title="The language of this form. Results are kept separately for Filipino and English."><span>Language</span>${seg('lang', LANGS, lang)}</div>
-        <span id="save-note" class="muted small"></span>
+        <span class="controls-grow"></span>
+        ${kind === 'class' ? statStrip(f, lang) : `<span class="kind-tag">${KIND_LABEL[kind]}</span>`}
+        <span id="save-note" class="muted small" hidden></span>
       </div>
       <div id="pr-warn"></div>`;
     let body = '';
-    if (kind === 'class') body = foundBanner(f) + statStrip(f, lang) + detailsPanel(f) + fillClass(f, lang, true);
+    if (kind === 'class') body = foundBanner(f) + detailsPanel(f) + fillClass(f, lang, true);
     else if (kind === 'grade' || kind === 'school') body = detailsPanel(f) + summaryCard(f, lang);
     else if (kind === 'learner') body = `<div class="card note"><h2>One form per learner</h2><p>This form is filled once for each learner in the class, using their name and the details below. <b>Save a form for every learner</b> gives you one Excel file per learner in a .zip.</p></div>` + detailsPanel(f);
     else body = `<div class="card note"><h2>This sheet has no learner table the app can fill yet</h2><p>The details the app recognised are below and will be written into the form. Fill in the rest in Excel after saving. If this sheet should be filled by the app, use <b>More › Adjust how this form is read</b>.</p></div>` + detailsPanel(f);
     return head + body;
   }
 
-  // counts at a glance
+  // Save / Excel / More, shown in the top bar
+  function workActions(f) {
+    const kind = f.m.kind;
+    const fitVal = ui.page.fit == null ? 'none' : ui.page.fit === false ? 'none' : ui.page.fit === true ? 'width' : ui.page.fit;
+    const saveIcon = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v9m-4-4 4 4 4-4M4 15h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    return `
+      ${kind === 'learner'
+        ? `<button class="btn primary" type="button" data-act="save-all">${saveIcon}Save for every learner</button>`
+        : `<button class="btn primary" type="button" data-act="save-file" title="Fills every form in this file and saves it as one Excel workbook">${saveIcon}Save filled file</button>`}
+      ${isDesktop ? '<button class="btn" type="button" data-act="open-form" title="Open the filled file in Excel to print">Excel</button>' : ''}
+      <details class="fb-more">
+        <summary class="btn" aria-label="More options">More</summary>
+        <div class="fb-menu stack">
+          ${kind !== 'learner' ? '<button class="btn" type="button" data-act="save-form">Save only this form</button>' : ''}
+          <label class="field"><span>Printing</span><select id="pg-fit">${options(FIT_OPTIONS, fitVal)}</select></label>
+          <label class="field"><span>Orientation</span><select id="pg-orient">${options([['', 'As in the form'], ['portrait', 'Portrait'], ['landscape', 'Landscape']], ui.page.orient || '')}</select></label>
+          <label class="field"><span>Paper</span><select id="pg-paper">${options(PAPER, ui.page.paper || '')}</select></label>
+          <button class="btn" type="button" data-act="open-sheet" data-tpl="${f.t.id}" data-i="${f.i}">Adjust how this form is read</button>
+          <button class="btn danger" type="button" data-act="del-tpl" data-tpl="${f.t.id}">Remove this file</button>
+        </div>
+      </details>`;
+  }
+
+  // counts at a glance: small coloured chips
   function statStrip(f, lang) {
     const cls = currentClass(true);
     const hasLevel = f.m.lists.some(l => l.columns.some(c => c.key === 'a.level'));
@@ -265,11 +265,11 @@
       if (r.nonReader) n.nonReader++;
       if (r.level || r.nonReader || Object.values(r.x || {}).some(v => v !== '' && v != null && v !== false)) n.entered++;
     }
-    const stat = (num, label, cls2 = '') => `<div class="stat ${cls2}"><b>${num}</b><span>${label}</span></div>`;
-    return `<div class="stats">
-      ${stat(n.all, `Learners${n.M || n.F ? ` · ${n.M} M, ${n.F} F` : ''}`)}
-      ${hasLevel ? stat(n.Independent, 'Independent', 'i') + stat(n.Instructional, 'Instructional', 'n') + stat(n.Frustration, 'Frustration', 'f') : stat(n.entered, 'With entries')}
-      ${hasFlags ? stat(n.struggling, 'Struggling readers') + stat(n.nonReader, 'Non-readers') : ''}
+    const chip = (num, label, cls2 = '', title = '') => `<span class="sc ${cls2}"${title ? ` title="${title}"` : ''}><b>${num}</b>${label}</span>`;
+    return `<div class="stat-chips" aria-label="Counts for this class">
+      ${chip(n.all, 'learners', '', n.M || n.F ? `${n.M} male, ${n.F} female` : '')}
+      ${hasLevel ? chip(n.Independent, 'Independent', 'i') + chip(n.Instructional, 'Instructional', 'n') + chip(n.Frustration, 'Frustration', 'f') : chip(n.entered, 'with entries')}
+      ${hasFlags ? chip(n.struggling, 'struggling') + chip(n.nonReader, 'non-readers') : ''}
     </div>`;
   }
 
@@ -393,9 +393,19 @@
       if (k === 'class.grade') return `<label class="field"><span>${label}</span><select id="${id}" data-detail="${k}">${options([['', '–']].concat(GRADES.map(g => [g, 'Grade ' + g])), val)}</select></label>`;
       return `<label class="field"><span>${label}</span><input type="text" id="${id}" data-detail="${k}" value="${esc(val)}"${k === 'date' ? ` placeholder="${esc(todayText())}"` : ''}></label>`;
     }).join('');
-    return `<div class="card">
-      <div class="card-head"><h2>Form details</h2><p class="muted small">These fill the top of the form. School details are remembered for all your forms.</p></div>
-      <div class="grid2">${inputs}</div></div>`;
+    // folded into one line; open while something is still empty
+    const filled = [...keys].map(k => {
+      const [label, where, prop] = DETAIL_FIELDS[k];
+      const v = where === 'school' ? state.school[prop] : where === 'class' ? cls[prop] : ((state.dates || {})[`${cls.id}:${ui.period}`] || '');
+      return { label, v: k === 'class.grade' && v ? 'Grade ' + v : v };
+    });
+    const missing = filled.filter(x => !x.v).length;
+    const summary = filled.filter(x => x.v).map(x => `<span><i>${esc(x.label)}</i> ${esc(x.v)}</span>`).join('');
+    return `<details class="card details"${missing ? ' open' : ''}>
+      <summary><h2>Form details</h2><span class="details-line">${summary || '<span class="muted">Not filled in yet</span>'}</span>${missing ? `<span class="chip warn">${missing} to fill in</span>` : '<span class="chip ok">Complete</span>'}</summary>
+      <div class="grid2">${inputs}</div>
+      <p class="muted small">These fill the top of the form. School details are remembered for all your forms.</p>
+    </details>`;
   }
 
   // ---------- the entry table ----------
