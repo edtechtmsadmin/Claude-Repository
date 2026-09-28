@@ -485,7 +485,7 @@
   function fillContext(f) {
     return {
       kind: f.m.kind, classId: ui.classId, grade: ui.grade, period: ui.period, lang: formLang(f),
-      date: (state.dates || {})[`${ui.classId}:${ui.period}`] || todayText(),
+      date: (state.dates || {})[`${ui.classId}:${ui.period}`] || (f.m.fields.some(x => x.key === 'date' && x.current) ? '' : todayText()),
     };
   }
   async function buildFiles(all) {
@@ -496,7 +496,7 @@
     if (!data) throw new Error('The form file is missing on this computer. Upload it again under My forms.');
     const sheet = data.wb.sheets.find(s => s.path === f.m.sheetPath);
     const kind = f.m.kind;
-    const page = pageSetup(f);
+    const page = XL.effectivePage(sheet, pageSetup(f));
     const opts = { onlySheet: f.m.sheetPath, pageSheet: f.m.sheetPath, page, type: 'uint8array' };
     const files = [], warnings = [];
     const cls = state.classes.find(c => c.id === ctx.classId);

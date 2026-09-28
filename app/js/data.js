@@ -89,8 +89,9 @@
     s = s.replace(/^,\s*/, '').replace(/,\s*$/, '');
     return settings.upperNames ? s.toUpperCase() : s;
   }
+  // learners stay in the order the teacher entered them (usually boys first, then girls)
   function sortLearners(list) {
-    return list.slice().sort((a, b) => (a.last || '').localeCompare(b.last || '') || (a.first || '').localeCompare(b.first || ''));
+    return list.slice();
   }
   function result(state, learnerId, period, lang) {
     return (((state.results[learnerId] || {})[period] || {})[lang]) || {};
@@ -272,7 +273,9 @@
       }
       let text = original;
       const after = fs.find(f => f.mode === 'after');
-      if (after) {
+      if (after && after.key === 'date' && after.current && !(state.dates || {})[`${ctx.classId}:${ctx.period}`]) {
+        // keep the date already written on the form
+      } else if (after) {
         const v = singleValue(after.key, state, ctx);
         if (v === '' || v == null) warnings.push(`No value for “${after.label}” (cell ${ref}).`);
         else text = text.replace(/^(\s*[^:]*:)(\s*).*$/s, (m, head, sp) => head + (sp || ' ') + v);
@@ -284,6 +287,18 @@
         const runs = [...text.matchAll(/_{3,}/g)];
         const run = runs[f.blankIndex];
         if (run) text = text.slice(0, run.index) + String(v) + text.slice(run.index + run[0].length);
+      }
+      const ticks = fs.filter(f => f.mode === 'tick');
+      if (ticks.length) {
+        let k = 0;
+        text = text.replace(/(_+\s*[\/√✓xX]?\s*_*)(\s*)(pre[- ]?test|post[- ]?test|mid[- ]?year|bosy|mosy|eosy)/gi, (m, slot, sp, word) => {
+          const f = ticks.find(t => t.tickIndex === k++);
+          if (!f) return m;
+          const len = Math.max(3, slot.replace(/\s/g, '').length);
+          const on = f.key.slice(5) === ctx.period;
+          const half = Math.floor((len - 1) / 2);
+          return (on ? '_'.repeat(half) + '√' + '_'.repeat(len - 1 - half) : '_'.repeat(len)) + sp + word;
+        });
       }
       for (const f of fs.filter(f => f.mode === 'find')) {
         const v = singleValue(f.key, state, ctx);

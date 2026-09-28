@@ -429,6 +429,17 @@
       if (!n) continue;
       const inTable = tableRows.has(cell.r);
 
+      // "___/___Pre-Test ____ Post Test": a tick slot before each period word
+      const tickRe = /(_+\s*[\/√✓xX]?\s*_*)\s*(pre[- ]?test|post[- ]?test|mid[- ]?year|bosy|mosy|eosy)/gi;
+      let tm, ti = 0, hasTick = false;
+      while ((tm = tickRe.exec(raw))) {
+        const w = tm[2].toLowerCase();
+        const P = /^pre|bosy/.test(w) ? 'BOSY' : /^post|eosy/.test(w) ? 'EOSY' : 'MOSY';
+        add({ ref: cell.ref, key: 'tick:' + P, mode: 'tick', tickIndex: ti++, conf: 0.85 });
+        hasTick = true;
+      }
+      if (hasTick) continue;
+
       // ____ blanks: "GRADE _____", "Female: _____", "Grade ____ Level Text"
       const blankRe = /_{3,}/g;
       let m, idx = 0, prevEnd = 0;
