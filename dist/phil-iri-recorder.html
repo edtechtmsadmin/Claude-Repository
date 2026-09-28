@@ -166,6 +166,46 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent);
   background: var(--ink); color: var(--ground); padding: 10px 18px; border-radius: 8px; box-shadow: var(--shadow); max-width: min(560px, 92vw);
 }
 
+/* ---------- fill in forms ---------- */
+.small { font-size: .85rem; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; counter-reset: step; }
+.steps li { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px 14px 56px; position: relative; display: flex; flex-direction: column; gap: 2px; }
+.steps li::before {
+  counter-increment: step; content: counter(step); position: absolute; left: 16px; top: 14px; width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); font-weight: 700;
+}
+.steps li span { color: var(--muted); font-size: .9rem; }
+.drop.big { padding: 40px 22px; }
+.drop.big b { font-size: 1.2rem; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: flex-end; }
+.toolbar .field > span { font-weight: 600; font-size: .85rem; color: var(--muted); }
+.toolbar .grow { flex: 1 1 240px; }
+.chip.big { font-size: .9rem; padding: 6px 12px; }
+.savebar {
+  position: sticky; bottom: env(safe-area-inset-bottom, 0px); z-index: 4; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 14px; box-shadow: var(--shadow);
+}
+.pagesetup summary { cursor: pointer; color: var(--accent); font-weight: 600; padding: 6px 4px; }
+.pagesetup[open] { flex-basis: 100%; }
+table.grid.entry th { text-align: center; white-space: normal; vertical-align: bottom; min-width: 64px; text-transform: none; letter-spacing: 0; font-size: .78rem; }
+table.grid.entry th.grp { border-bottom: 1px solid var(--line); }
+table.entry td { padding: 2px 4px; }
+table.entry td.namecell { min-width: 230px; }
+table.entry td.numcell { width: 84px; }
+table.entry td.numcell input { text-align: center; }
+table.entry td.auto { background: var(--surface-2); color: var(--ink); font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
+table.entry td.rm { width: 36px; }
+table.entry tr.addrow td { padding: 4px 6px; background: var(--surface); }
+table.entry .add-name { width: 100%; border-style: dashed !important; border-color: var(--line-strong) !important; background: var(--surface) !important; }
+button.mark {
+  width: 30px; height: 26px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--surface); cursor: pointer;
+  color: var(--accent-ink); font-size: .8rem; line-height: 1;
+}
+button.mark[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); }
+button.mark.lvl-Independent[aria-pressed="true"] { background: var(--sure); border-color: var(--sure); color: #fff; }
+button.mark.lvl-Instructional[aria-pressed="true"] { background: var(--check); border-color: var(--check); color: #fff; }
+button.mark.lvl-Frustration[aria-pressed="true"] { background: var(--missing); border-color: var(--missing); color: #fff; }
+
 /* ---------- tables ---------- */
 .table-wrap { overflow-x: auto; }
 table.grid { border-collapse: collapse; width: 100%; font-size: .92rem; }
@@ -270,11 +310,10 @@ td.mk-fill { box-shadow: inset 0 0 0 999px rgba(31, 95, 191, .10); }
         <div class="brand-sy" id="brand-sy"></div>
       </div>
     </div>
-    <button class="nav-item" data-view="classes" type="button">Classes &amp; learners</button>
-    <button class="nav-item" data-view="results" type="button">Reading results</button>
-    <button class="nav-item" data-view="templates" type="button">Templates</button>
-    <button class="nav-item" data-view="print" type="button">Print forms</button>
-    <button class="nav-item" data-view="settings" type="button">School &amp; settings</button>
+    <button class="nav-item" data-view="fill" type="button">Fill in forms</button>
+    <button class="nav-item" data-view="templates" type="button">My forms</button>
+    <button class="nav-item" data-view="classes" type="button">Classes</button>
+    <button class="nav-item" data-view="settings" type="button">Settings</button>
     <div class="rail-foot" id="rail-foot"></div>
   </nav>
   <main class="main">
@@ -1035,7 +1074,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     'class.section': ['section', 'pangkat'],
     'class.adviser': ['teacher', 'name of teacher', 'class adviser', 'adviser', 'assessor', 'guro', 'name of assessor', 'tester', 'name of adviser'],
     'class.designation': ['designation', 'position'],
-    'date': ['date', 'date of test', 'date of testing', 'petsa', 'date administered'],
+    'date': ['date', 'date of test', 'date of testing', 'petsa', 'date administered', 'date of assessment', 'date of screening'],
     'count.male': ['male', 'boys', 'no of male', 'lalaki', 'no of males'],
     'count.female': ['female', 'girls', 'babae', 'no of female', 'no of females'],
     'count.total': ['total', 'total enrolment', 'total enrollment', 'enrolment', 'enrollment'],
@@ -1047,7 +1086,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     'school.name': 'School name', 'school.id': 'School ID', 'school.idName': 'School ID - School name',
     'school.district': 'District', 'school.division': 'Division', 'school.region': 'Region',
     'school.head': 'School head', 'school.chair': 'Grade level chairperson', 'school.coordinator': 'Reading coordinator',
-    'sy': 'School year', 'period': 'Assessment period', 'language': 'Language',
+    'sy': 'School year', 'period': 'Assessment period', 'tick:BOSY': 'Pre-test tick', 'tick:MOSY': 'Midyear tick', 'tick:EOSY': 'Post-test tick', 'language': 'Language',
     'class.gradeSection': 'Grade & section', 'class.grade': 'Grade', 'class.section': 'Section',
     'class.adviser': 'Teacher / assessor', 'class.designation': 'Teacher designation', 'date': 'Date',
     'count.male': 'Number of male learners', 'count.female': 'Number of female learners', 'count.total': 'Total learners',
@@ -1069,7 +1108,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     'a.wordPct': ['word reading score', 'word reading score %', 'word reading', 'word reading %', 'word recognition', 'oral reading score'],
     'a.time': ['reading time', 'reading time sec', 'time', 'time in seconds', 'seconds'],
     'a.wpm': ['reading rate', 'reading rate wpm', 'wpm', 'words per minute', 'speed'],
-    'a.compCorrect': ['comprehension score', 'no of correct answers', 'correct answers', 'score'],
+    'a.compCorrect': ['comprehension score', 'no of correct answers', 'correct answers'],
     'a.compPct': ['comprehension %', 'comprehension', 'percentage comprehension', 'comprehension percentage'],
     'a.level': ['reading level', 'reading profile', 'level', 'overall reading level', 'reading profile level', 'profile'],
     'a.remarks': ['remarks', 'notes', 'intervention', 'interventions', 'interventions remarks', 'puna'],
@@ -1175,6 +1214,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       const col = columnMeaning(chain);
       col.col = c;
       col.label = chain.join(' › ');
+      col.chain = chain;
       if (col.key === 'row.no') noCol = c;
       if (col.key || chain.length) columns.push(col);
     }
@@ -1199,8 +1239,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       if (texts.length === 1 && /^(male|female|boys|girls|m|f)$/.test(first)) { pendingSex = sexOf(first); continue; }
       if (rowPx(sheet, r) > 0 && rowPx(sheet, r) < 12 && !texts.length) continue; // thin spacer row
       const bordered = hasBorder(sheet, r, nc, 'bottom') || hasBorder(sheet, r, nc, 'left');
-      const nameEmpty = isEmpty(sheet, r, nc);
-      if (bordered && nameEmpty) {
+      if (bordered) {
         gap = 0;
         if (!cur) { cur = { first: r, last: r, sex: pendingSex }; pendingSex = null; }
         cur.last = r;
@@ -1211,15 +1250,102 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }
     if (cur) parts.push(cur);
     if (!parts.length) return null;
+    const lastRow = parts[parts.length - 1].last;
+
+    // extra columns: link totals to the scores they add up, and "< 27" checks to the total
+    const cols = columns.filter(c => c.key);
+    cols.forEach((c, i) => {
+      if (c.input === 'total') {
+        const keys = [];
+        for (let j = i - 1; j >= 0 && (cols[j].input === 'number'); j--) {
+          if (c.group && cols[j].group && cols[j].group !== c.group && keys.length) break;
+          keys.unshift(cols[j].key);
+        }
+        c.sumOf = keys;
+      }
+    });
+    const totals = cols.filter(c => c.input === 'total');
+    const conds = cols.filter(c => c.input === 'cond');
+    for (const c of conds) {
+      const t = totals.filter(x => x.col < c.col).pop() || totals[0];
+      c.of = t ? t.key : null;
+      // "< 27" next to ">= 28" means 27 and below
+      if (c.op === 'lt') { const ge = conds.find(x => x.op === 'ge'); if (ge && ge.n === c.n + 1) c.n = ge.n; }
+    }
+    // a SUM or COUNT under a tick column needs the number 1, not a check mark
+    for (const c of cols) {
+      if (!(c.input === 'check' || c.input === 'cond' || c.choice || c.flag)) continue;
+      for (let rr = lastRow + 1; rr <= lastRow + 3; rr++) {
+        const cell = sheet.cells.get(makeRef(rr, c.col));
+        if (cell && cell.formula && /\b(SUM|COUNT)\(/i.test(cell.formula)) { c.mark = 1; break; }
+      }
+      if (c.mark == null) c.mark = '√';
+    }
+    // template cells that are formulas are left to Excel
+    for (const c of cols) {
+      const cell = sheet.cells.get(makeRef(parts[0].first, c.col));
+      if (cell && cell.formula && c.key !== 'row.no') { c.input = 'formula'; }
+    }
+
+    // learners already written on the form (a filled template)
+    const found = [];
+    for (const p of parts) {
+      for (let rr = p.first; rr <= p.last; rr++) {
+        const name = cellText(sheet, rr, nc).trim();
+        if (!name || /^\d+$/.test(name)) continue;
+        const values = {};
+        for (const c of cols) {
+          const t = cellText(sheet, rr, c.col).trim();
+          if (t !== '') values[c.col] = t;
+        }
+        found.push({ sex: p.sex, name, values });
+      }
+    }
+
+    // on a filled form, use the tick the teacher already used ("1", "√", "/", "x")
+    for (const c of cols) {
+      if (!(c.input === 'check' || c.input === 'cond' || c.choice || c.flag)) continue;
+      const seen = found.map(f => f.values[c.col]).filter(v => v != null && v !== '');
+      if (seen.length < 2) continue;
+      const counts = {};
+      for (const v of seen) counts[v] = (counts[v] || 0) + 1;
+      const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+      if (top.length <= 2 && !/^x$/i.test(top) || c.input !== 'check') c.mark = top === '1' ? 1 : top;
+    }
+
     return {
       id: 'L' + hr + '_' + nc,
       headerRows: [hr, headerEnd],
       nameCol: nc, noCol, cols: [c1, c2],
       parts: parts.map(p => ({ first: p.first, last: p.last, sex: p.sex })),
-      lastRow: parts[parts.length - 1].last,
-      columns: columns.filter(c => c.key),
+      lastRow,
+      columns: cols,
       unknownColumns: columns.filter(c => !c.key).map(c => ({ col: c.col, label: c.label })),
+      found,
     };
+  }
+
+  // Columns the app has no fixed meaning for (GST scores, Test Taken, ...):
+  // they still become input columns, stored under their heading text.
+  function extraMeaning(chain) {
+    const raw = chain.join(' ');
+    const joined = norm(raw);
+    const key = 'x:' + joined.slice(0, 60);
+    const group = chain.length > 1 ? norm(chain[0]) : null;
+    const label = chain.join(' ');
+    let m;
+    if ((m = /(?:<|less than|below)\s*=?\s*(\d+)/i.exec(raw)) && !/>\s*\/?\s*=?\s*\d/.test(raw)) return { key, input: 'cond', op: 'lt', n: +m[1], label, group, conf: 0.8 };
+    if ((m = /(?:>\s*\/?\s*=|>=|≥|at least)\s*(\d+)|(\d+)\s*(?:and above|or more|pataas)/i.exec(raw))) return { key, input: 'cond', op: 'ge', n: +(m[1] || m[2]), label, group, conf: 0.8 };
+    if ((m = />\s*(\d+)/.exec(raw))) return { key, input: 'cond', op: 'ge', n: +m[1] + 1, label, group, conf: 0.8 };
+    if (/\btotal\b/.test(joined)) return { key, input: 'total', label, group, conf: 0.8 };
+    if (/[√✓]|\bcheck\b|\btick\b|\bput (a )?(1|check|x)\b|\bor x\b|\(x\)/i.test(raw)) {
+      const mark = /put (a )?1/i.test(raw) ? 1 : /✓/.test(raw) ? '✓' : /\bx\b/i.test(raw) && !/[√✓]/.test(raw) ? 'X' : '√';
+      return { key, input: 'check', mark, label, group, conf: 0.8 };
+    }
+    if (/score|literal|inferential|applied|critical|\bnumber\b|\bno of\b|\braw\b|%|rate|time|words|miscues|items|points|correct|\bage\b/.test(joined)) {
+      return { key, input: 'number', label, group, conf: 0.75 };
+    }
+    return { key, input: 'text', label, group, conf: 0.6 };
   }
 
   function columnMeaning(chain) {
@@ -1238,6 +1364,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     for (const [lvl, re] of LEVEL_WORDS) {
       if (re.test(child) && child.split(' ').length <= 3) return { key: 'a.level', choice: lvl, mark, conf: 0.75 };
     }
+    const extra = chain.length ? extraMeaning(chain) : null;
+    if (extra && (extra.input === 'cond' || extra.input === 'total')) return extra;
     if (chain.length === 1 || child) {
       const hit = bestKey(child, COLUMN) || bestKey(joined, COLUMN);
       if (hit) {
@@ -1247,7 +1375,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       if (/^(m|male|boys)$/.test(child)) return { key: 'learner.sex', choice: 'M', mark, conf: 0.6 };
       if (/^(f|female|girls)$/.test(child)) return { key: 'learner.sex', choice: 'F', mark, conf: 0.6 };
     }
-    return { key: null, conf: 0 };
+    return extra || { key: null, conf: 0 };
   }
 
   // ---------- count tables (grade level / school summaries) ----------
@@ -1340,6 +1468,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       const blankRe = /_{3,}/g;
       let m, idx = 0, prevEnd = 0;
       while ((m = blankRe.exec(raw))) {
+        const after = raw.slice(m.index + m[0].length);
+        const tick = /^\s*\/?\s*(pre[- ]?test|bosy|beginning)/i.test(after) ? 'BOSY' : /^\s*\/?\s*(post[- ]?test|eosy|end of)/i.test(after) ? 'EOSY' : /^\s*\/?\s*(mid[- ]?year|mosy|middle)/i.test(after) ? 'MOSY' : null;
+        if (tick) { add({ ref: cell.ref, key: 'tick:' + tick, mode: 'blank', blankIndex: idx, conf: 0.85 }); idx++; prevEnd = m.index + m[0].length; continue; }
         const labelTxt = norm(raw.slice(prevEnd, m.index));
         const words = labelTxt.split(' ');
         const cands = [words[words.length - 1], words.slice(-2).join(' '), labelTxt].map(t => bestKey(t, SINGLE));
@@ -1361,7 +1492,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       if (sy) add({ ref: cell.ref, key: 'sy', mode: 'find', find: sy[0], conf: 0.9 });
       // (MIDYEAR), PRE-TEST ...
       const pm = PERIOD_RE.exec(raw);
-      if (pm && raw.length > pm[0].length + 2) add({ ref: cell.ref, key: 'period', mode: 'find', find: pm[0], conf: 0.85 });
+      if (pm && raw.length > pm[0].length + 2 && !fields.some(f => f.ref === cell.ref && f.key.startsWith('tick:'))) add({ ref: cell.ref, key: 'period', mode: 'find', find: pm[0], conf: 0.85 });
       // "... READING LEVEL IN FILIPINO" in titles
       const lm = /\b(filipino|english)\b/i.exec(raw);
       if (lm && /report|profile|summary|reading|inventory/.test(n) && raw.length > 20) add({ ref: cell.ref, key: 'language', mode: 'find', find: lm[0], conf: 0.8 });
@@ -1377,6 +1508,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           taken.add(t.ref);
         }
         continue;
+      }
+
+      // "School: Ocampo National High School" - label and value in one cell
+      const lv = /^\s*([A-Za-z][^:_]{1,40}?)\s*:\s*(\S.*?)\s*$/.exec(raw);
+      if (lv && !/_{3,}/.test(raw)) {
+        const hit = bestKey(norm(lv[1]), SINGLE, k => k.startsWith('count.') || k.startsWith('learner.'));
+        if (hit) { add({ ref: cell.ref, key: hit.key, mode: 'after', current: lv[2], conf: hit.conf * 0.9 }); taken.add(cell.ref); continue; }
       }
 
       // "SECTION :" / "Assessor:" with a value cell to the right
@@ -1495,6 +1633,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       },
       classes: [],
       results: {},
+      dates: {},
       templates: [],
       ui: {},
     };
@@ -1629,15 +1768,16 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       case 'sy': return state.sy;
       case 'period': return state.settings.periodNames[ctx.period] || ctx.period;
       case 'language': return ctx.lang;
-      case 'date': return ctx.date || '';
+      case 'date': return ctx.date || (state.dates || {})[`${ctx.classId}:${ctx.period}`] || '';
       case 'class.grade': return grade != null ? String(grade) : '';
       case 'class.section': return cls.section || '';
-      case 'class.gradeSection': return cls.grade ? `Grade ${cls.grade} - ${cls.section || ''}` : '';
+      case 'class.gradeSection': return cls.grade ? (cls.section && cls.section.length <= 3 ? `${cls.grade}-${cls.section}` : `Grade ${cls.grade} - ${cls.section || ''}`) : '';
       case 'class.adviser': return cls.adviser || '';
       case 'class.designation': return cls.designation || '';
       case 'count.male': return learners.filter(l => l.sex === 'M').length;
       case 'count.female': return learners.filter(l => l.sex === 'F').length;
       case 'count.total': return learners.length;
+      case 'tick:BOSY': case 'tick:MOSY': case 'tick:EOSY': return key.slice(5) === ctx.period ? '√' : '';
       case 'learner.name': return ctx.learner ? fullName(ctx.learner, state.settings) : '';
       case 'learner.lrn': return ctx.learner ? ctx.learner.lrn || '' : '';
       case 'learner.sex': return ctx.learner ? ctx.learner.sex || '' : '';
@@ -1645,10 +1785,42 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }
   }
 
+  const numOf = v => (v === '' || v == null || isNaN(+v)) ? null : +v;
+  // value of a template-specific column (scores, ticks, totals) for one learner
+  function extraValue(col, res) {
+    const x = res.x || {};
+    if (col.input === 'total') {
+      const parts = (col.sumOf || []).map(k => numOf(x[k])).filter(v => v != null);
+      return parts.length ? parts.reduce((a, b) => a + b, 0) : numOf(x[col.key]);
+    }
+    if (col.input === 'cond') {
+      const t = col.of ? col.ofValue : null;
+      if (t == null) return null;
+      return col.op === 'lt' ? t < col.n : t >= col.n;
+    }
+    if (col.input === 'check') return !!x[col.key];
+    return x[col.key] ?? null;
+  }
+  // totals of a row, so "Score < 27" can look at "Total Score"
+  function withTotals(columns, res) {
+    return columns.map(c => {
+      if (c.input !== 'cond') return c;
+      const t = columns.find(k => k.key === c.of);
+      return Object.assign({}, c, { ofValue: t ? extraValue(t, res) : null });
+    });
+  }
+
   function columnValue(col, learner, index, state, ctx) {
     const res = result(state, learner.id, ctx.period, ctx.lang);
     const comp = computed(res, state.settings);
     const mark = col.mark != null ? (String(col.mark) === '1' ? 1 : col.mark) : (state.settings.defaultMark === '1' ? 1 : state.settings.defaultMark);
+    if (col.key && col.key.startsWith('x:')) {
+      if (col.input === 'formula') return null;
+      const v = extraValue(col, res);
+      if (col.input === 'check' || col.input === 'cond') return v ? mark : null;
+      if (col.input === 'number' || col.input === 'total') return numOf(v);
+      return v === '' ? null : v;
+    }
     switch (col.key) {
       case 'row.no': return index + 1;
       case 'learner.name': return fullName(learner, state.settings);
@@ -1708,10 +1880,16 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         continue;
       }
       let text = original;
+      const after = fs.find(f => f.mode === 'after');
+      if (after) {
+        const v = singleValue(after.key, state, ctx);
+        if (v === '' || v == null) warnings.push(`No value for “${after.label}” (cell ${ref}).`);
+        else text = text.replace(/^(\s*[^:]*:\s*).*$/s, (m, head) => head + v);
+      }
       const blanks = fs.filter(f => f.mode === 'blank').sort((a, b) => b.blankIndex - a.blankIndex);
       for (const f of blanks) {
         const v = singleValue(f.key, state, ctx);
-        if (v === '' || v == null) { warnings.push(`No value for “${f.label}” (cell ${ref}).`); continue; }
+        if (v === '' || v == null) { if (!f.key.startsWith('tick:')) warnings.push(`No value for “${f.label}” (cell ${ref}).`); continue; }
         const runs = [...text.matchAll(/_{3,}/g)];
         const run = runs[f.blankIndex];
         if (run) text = text.slice(0, run.index) + String(v) + text.slice(run.index + run[0].length);
@@ -1771,14 +1949,27 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       return { list: l, parts };
     });
     const pageCount = Math.max(1, ...listPlans.flatMap(lp => lp.parts.map(pp => Math.ceil(pp.learners.length / pp.cap) || 1)));
+    // a template that was already filled in: clear the old entries in the learner rows first
+    const clears = [];
+    for (const lp of listPlans) {
+      for (const p of lp.list.parts) for (let r = p.first; r <= p.last; r++) {
+        for (const col of lp.list.columns) {
+          if (col.key === 'row.no' || col.input === 'formula') continue;
+          const ref = global.XL.makeRef(r, col.col);
+          const cell = sheet.cells.get(ref);
+          if (cell && cell.value != null && cell.value !== '' && !cell.formula) clears.push({ ref, value: null });
+        }
+      }
+    }
     for (let pg = 0; pg < pageCount; pg++) {
-      const writes = base.slice();
+      const writes = base.concat(clears);
       for (const lp of listPlans) {
         for (const pp of lp.parts) {
           const slice = pp.learners.slice(pg * pp.cap, (pg + 1) * pp.cap);
           slice.forEach((learner, i) => {
             const r = pp.part.first + i;
-            for (const col of lp.list.columns) {
+            const rowCols = withTotals(lp.list.columns, result(state, learner.id, ctx.period, ctx.lang));
+            for (const col of rowCols) {
               const v = columnValue(col, learner, pg * pp.cap + i, state, ctx);
               if (v === null || v === undefined || v === '') continue;
               writes.push({ ref: global.XL.makeRef(r, col.col), value: v });
@@ -1794,12 +1985,67 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   // Missing entries that would leave the form incomplete
-  function missingResults(state, ctx) {
+  function missingResults(state, ctx, mapping) {
+    if (mapping && !mapping.lists.some(l => l.columns.some(c => c.key === 'a.level'))) return [];
     const learners = groupLearners(state, ctx);
     return learners.filter(l => {
       const res = result(state, l.id, ctx.period, ctx.lang);
       return !res.level && !computed(res, state.settings).suggested && !res.nonReader;
     });
+  }
+
+  function parseName(text) {
+    const l = { id: uid('l'), lrn: '', last: '', first: '', middle: '', ext: '', sex: '' };
+    const t = String(text).replace(/\s+/g, ' ').trim();
+    if (t.includes(',')) {
+      const [last, rest = ''] = t.split(/,(.*)/s);
+      const parts = rest.trim().split(' ').filter(Boolean);
+      l.last = last.trim();
+      const ext = parts.findIndex(p => /^(jr\.?|sr\.?|ii|iii|iv)$/i.test(p));
+      if (ext >= 0) l.ext = parts.splice(ext, 1)[0];
+      if (parts.length > 1 && /^[A-Za-z]\.?$/.test(parts[parts.length - 1])) l.middle = parts.pop().replace(/\.$/, '');
+      else if (parts.length > 2) l.middle = parts.pop();
+      l.first = parts.join(' ');
+    } else {
+      const parts = t.split(' ');
+      l.last = parts.length > 1 ? parts.pop() : t;
+      l.first = parts.join(' ');
+    }
+    return l;
+  }
+  const truthy = v => v != null && String(v).trim() !== '' && !/^(x|0|no|false)$/i.test(String(v).trim());
+
+  // rows = list.found from detection; returns learners added
+  function importFound(state, cls, list, period, lang) {
+    const added = [];
+    for (const row of list.found || []) {
+      const l = parseName(row.name);
+      l.sex = row.sex || '';
+      const patch = { x: {} };
+      for (const c of list.columns) {
+        const v = row.values[c.col];
+        if (v == null) continue;
+        if (c.key === 'learner.lrn') l.lrn = v;
+        else if (c.key === 'learner.sex' && !c.choice) l.sex = /^f/i.test(v) ? 'F' : /^m/i.test(v) ? 'M' : l.sex;
+        else if (c.key === 'learner.sex' && c.choice && truthy(v)) l.sex = c.choice;
+        else if (c.key === 'a.level' && c.choice) { if (truthy(v)) patch.level = c.choice; }
+        else if (c.key === 'a.level') { const m = LEVELS.find(x => x.toLowerCase().startsWith(String(v).toLowerCase().slice(0, 4))); if (m) patch.level = m; }
+        else if (c.key === 'a.indepGrade') { const m = /(\d+)/.exec(v); if (m) patch.indepGrade = m[1]; }
+        else if (c.key === 'a.struggling') patch.struggling = truthy(v);
+        else if (c.key === 'a.nonReader') patch.nonReader = truthy(v);
+        else if (c.key === 'a.remarks') patch.remarks = v;
+        else if (c.key && c.key.startsWith('x:') && (c.input === 'number' || c.input === 'text')) patch.x[c.key] = c.input === 'number' ? numOf(v) : v;
+        else if (c.key && c.key.startsWith('x:') && c.input === 'check') patch.x[c.key] = truthy(v);
+      }
+      cls.learners.push(l);
+      setResult(state, l.id, period, lang, patch);
+      added.push(l);
+    }
+    return added;
+  }
+  function setExtra(state, learnerId, period, lang, key, value) {
+    const cur = result(state, learnerId, period, lang);
+    setResult(state, learnerId, period, lang, { x: Object.assign({}, cur.x || {}, { [key]: value }) });
   }
 
   // ---------- samples ----------
@@ -1844,6 +2090,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     kvGet, kvSet, kvDel, persistent,
     fullName, sortLearners, result, setResult, computed,
     buildWrites, missingResults, groupLearners, sampleState,
+    extraValue, withTotals, importFound, parseName, setExtra, singleValue,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -1851,13 +2098,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 <script>
 /* Generated by tools/build.mjs from samples/*.xlsx - do not edit. */
 window.SAMPLE_TEMPLATES = {
-  A: { name: "sample layout A", file: "sample-template-A.xlsx", data: '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' },
-  B: { name: "sample layout B", file: "sample-template-B.xlsx", data: 'UEsDBBQAAAAIABkVPF1Gx01IlQAAAM0AAAAQAAAAZG9jUHJvcHMvYXBwLnhtbE3PTQvCMAwG4L9SdreZih6kDkQ9ip68zy51hbYpbYT67+0EP255ecgboi6JIia2mEXxLuRtMzLHDUDWI/o+y8qhiqHke64x3YGMsRoPpB8eA8OibdeAhTEMOMzit7Dp1C5GZ3XPlkJ3sjpRJsPiWDQ6sScfq9wcChDneiU+ixNLOZcrBf+LU8sVU57mym/8ZAW/B7oXUEsDBBQAAAAIABkVPF2aZaEr6wAAAMsBAAARAAAAZG9jUHJvcHMvY29yZS54bWylkcFOwzAMhl9lyr112sEEUZYLiBNISEwCcYscb6to2igxavf2tGXrQHDbMf4/f7YVjUFhG+k5toEiV5QWva+bpDCsxZ45KICEe/I25QPRDOG2jd7y8Iw7CBY/7I6glHIFntg6yxZGYRZmozgqHc7K8BnrSeAQqCZPDSco8gLOLFP06d+GKZnJPlUz1XVd3i0nbtiogLenx5dp+axqEtsGSRjtUGEky20040Xh0NcafhT1cfZ3gdximKD4EGgtTsnr8u5+8yBMKctVJm+z8mYjS3Ul1bV8H12/+s9C37pqW11gPAmMhj//Zr4AUEsDBBQAAAAIABkVPF2ZXJwjEAYAAJwnAAATAAAAeGwvdGhlbWUvdGhlbWUxLnhtbO1aW3PaOBR+76/QeGf2bQvGNoG2tBNzaXbbtJmE7U4fhRFYjWx5ZJGEf79HNhDLlg3tkk26mzwELOn7zkVH5+g4efPuLmLohoiU8nhg2S/b1ru3L97gVzIkEUEwGaev8MAKpUxetVppAMM4fckTEsPcgosIS3gUy9Zc4FsaLyPW6rTb3VaEaWyhGEdkYH1eLGhA0FRRWm9fILTlHzP4FctUjWWjARNXQSa5iLTy+WzF/NrePmXP6TodMoFuMBtYIH/Ob6fkTlqI4VTCxMBqZz9Wa8fR0kiAgsl9lAW6Sfaj0xUIMg07Op1YznZ89sTtn4zK2nQ0bRrg4/F4OLbL0otwHATgUbuewp30bL+kQQm0o2nQZNj22q6RpqqNU0/T933f65tonAqNW0/Ta3fd046Jxq3QeA2+8U+Hw66JxqvQdOtpJif9rmuk6RZoQkbj63oSFbXlQNMgAFhwdtbM0gOWXin6dZQa2R273UFc8FjuOYkR/sbFBNZp0hmWNEZynZAFDgA3xNFMUHyvQbaK4MKS0lyQ1s8ptVAaCJrIgfVHgiHF3K/99Ze7yaQzep19Os5rlH9pqwGn7bubz5P8c+jkn6eT101CznC8LAnx+yNbYYcnbjsTcjocZ0J8z/b2kaUlMs/v+QrrTjxnH1aWsF3Pz+SejHIju932WH32T0duI9epwLMi15RGJEWfyC265BE4tUkNMhM/CJ2GmGpQHAKkCTGWoYb4tMasEeATfbe+CMjfjYj3q2+aPVehWEnahPgQRhrinHPmc9Fs+welRtH2Vbzco5dYFQGXGN80qjUsxdZ4lcDxrZw8HRMSzZQLBkGGlyQmEqk5fk1IE/4rpdr+nNNA8JQvJPpKkY9psyOndCbN6DMawUavG3WHaNI8ev4F+Zw1ChyRGx0CZxuzRiGEabvwHq8kjpqtwhErQj5iGTYacrUWgbZxqYRgWhLG0XhO0rQR/FmsNZM+YMjszZF1ztaRDhGSXjdCPmLOi5ARvx6GOEqa7aJxWAT9nl7DScHogstm/bh+htUzbCyO90fUF0rkDyanP+kyNAejmlkJvYRWap+qhzQ+qB4yCgXxuR4+5Xp4CjeWxrxQroJ7Af/R2jfCq/iCwDl/Ln3Ppe+59D2h0rc3I31nwdOLW95GblvE+64x2tc0LihjV3LNyMdUr5Mp2DmfwOz9aD6e8e362SSEr5pZLSMWkEuBs0EkuPyLyvAqxAnoZFslCctU02U3ihKeQhtu6VP1SpXX5a+5KLg8W+Tpr6F0PizP+Txf57TNCzNDt3JL6raUvrUmOEr0scxwTh7LDDtnPJIdtnegHTX79l125COlMFOXQ7gaQr4Dbbqd3Do4npiRuQrTUpBvw/npxXga4jnZBLl9mFdt59jR0fvnwVGwo+88lh3HiPKiIe6hhpjPw0OHeXtfmGeVxlA0FG1srCQsRrdguNfxLBTgZGAtoAeDr1EC8lJVYDFbxgMrkKJ8TIxF6HDnl1xf49GS49umZbVuryl3GW0iUjnCaZgTZ6vK3mWxwVUdz1Vb8rC+aj20FU7P/lmtyJ8MEU4WCxJIY5QXpkqi8xlTvucrScRVOL9FM7YSlxi84+bHcU5TuBJ2tg8CMrm7Oal6ZTFnpvLfLQwJLFuIWRLiTV3t1eebnK56Inb6l3fBYPL9cMlHD+U751/0XUOufvbd4/pukztITJx5xREBdEUCI5UcBhYXMuRQ7pKQBhMBzZTJRPACgmSmHICY+gu98gy5KRXOrT45f0Usg4ZOXtIlEhSKsAwFIRdy4+/vk2p3jNf6LIFthFQyZNUXykOJwT0zckPYVCXzrtomC4Xb4lTNuxq+JmBLw3punS0n/9te1D20Fz1G86OZ4B6zh3OberjCRaz/WNYe+TLfOXDbOt4DXuYTLEOkfsF9ioqAEativrqvT/klnDu0e/GBIJv81tuk9t3gDHzUq1qlZCsRP0sHfB+SBmOMW/Q0X48UYq2msa3G2jEMeYBY8wyhZjjfh0WaGjPVi6w5jQpvQdVA5T/b1A1o9g00HJEFXjGZtjaj5E4KPNz+7w2wwsSO4e2LvwFQSwMEFAAAAAgAGRU8XXTxijuNBwAAfzEAABgAAAB4bC93b3Jrc2hlZXRzL3NoZWV0MS54bWyN211v20YahuG/QmhP0oNWFknZjmEbsMfzhXVTw8q22KMFI41tIhLpJem43V+/JEWLnmhuNQWayLz0DPnq80EwPn8tq6/1k3NN9OdmXdQXk6emeT6bTuvlk9tk9S/lsytaeSirTda0P1aP0/q5ctmqD23W0/jo6Hi6yfJicnneH7urLs/Ll2adF+6uiuqXzSar/rp26/L1YjKbvB24zx+fmv7A9PL8OXt0C9f867kNPOTN5/KuPfCG092qq3zjijovi6hyDxeTq9mZnSf9ffq7/J671/rd7aib7UtZfu1+sKuLyVF3iW7tlk23Rtb+9c0Jt153S7UX9t9h1Xdn7ZLvb78tr/qHo73aL1ntRLn+I181TxeT00m0cg/Zy7q5L1+NG0ac9wsuy3Xd/xm9bu98PImWL3VTboZwe95NXmz/zv58m/5dYEaJeEjE3yeSFBLJkEj2znEEiXRIpHuJU0jMh8T8h+c4HhLHe4kYEidD4uSHE6dD4vT7REyJj0Pi4/Z1sX0e+1fBTdZkl+dV+RpV3d3b5bob/Wupj7dPfl5074NFU7Wat7nmcnH1692tjD7L9q+rzzK6jj60b66ocXWTF49RWaz/+ul82rRn6u4/Xbb/t2fYnSbenSbuTxPDae7uf1O2Pc9vKrqXVzfyfhHdyftI3F4tFtHPkfykb+3CHDhRujtR2p8ogRN9yjYuKh+ixfKpLNdn0X8O/uefsF9fHV5/u25kb84CWb3Npn222D6l3XGzPT5/d9wbbr4bbn7w5LrKVi66dd/cOnT663n49DeHV11sP4FCK0pYUR1e8e1J+Oyy9nO7Cj5UsLKZ7z1U/XG7f9x7CI93D+Hxjzx//3ZZ8LKuj+EhPLzqVV27um6/DprozlV5uQo+mPtreyO0nwHdB3Sye+fvPrJ3s532KxzDVfwjNNDhyO39p0BIHA7dZcVjts6K6EP3RP8UWODm8AL/zOqsyrMi9CAdTt63X/Xd59JdVT7kaxd6/x5ewBYr13aIVfdU9W+k0Gvz8BLt7ZfHx3V3Gd3luCr60L7Kl19DD4Q5vNSnsvj5b9ewfzdR46pv7Tzte7iOpu01tYXma33gs/Tj7vX0sV/55PtX+zUcF9vjp3vvDri/hOMKjms4buC43T/uDTo7Gr8Fj2BUAjHA/rCUkASKQBMYAhsAf+R3X/wzGhlADBAYGRKSQBFoAkNgA+CPPJaQWUwjA4gBAiNDQhIoAk1gCGwA/JGTceSERgYQAwRGhoQkUASawBDYAPgjjw1wltLIAGKAwMiQkASKQBMYAhsAf+SxF87mNDKAGCAwMiQkgSLQBIbABsAfeexxs2MaGUAMEBgZEpJAEWgCQ2AD4I98Mo58QiMDiAECI0NCEigCTWAIbAD8kU/HkU9pZAAxQGBkSEgCRaAJDIENgD/yWLpm1LoIxIx6FyUkgSLQBIbABsD/t4GxfcXUvghETO2LEpJAEWgCQ2AD4I88tq+Y2heBiKl9UUISKAJNYAhsAPyR3/0TELUvAhFT+6KEJFAEmsAQ2AD4I4/tK6b2RSBial+UkASKQBMYAhsAf+SxfcXUvghETO2LEpJAEWgCQ2AD4I88tq+Y2heBiKl9UUISKAJNYAhsAPyRx/YVU/siEDG1L0pIAkWgCQyBDYA/8ti+YmpfBCKm9kUJSaAINIEhsAHwRx7bV0zti0DE1L4oIQkUgSYwBDYA/shj+4qpfRGImNoXJSSBItAEhsAGwBs5GdtXQu2LQCTUvighCRSBJjAENgD+yGP7Sqh9EYiE2hclJIEi0ASGwAbAH3lsXwm1LwKRUPuihCRQBJrAENgA+COP7Suh9kUgEmpflJAEikATGAIbAH/ksX0l1L4IRELtixKSQBFoAkNgA+CPPLavhNoXgUiofVFCEigCTWAIbAD8kcf2lVD7IhAJtS9KSAJFoAkMgQ2AP/LYvhJqXwQiofZFCUmgCDSBIbAB8Ece21dC7YtAJNS+KCEJFIEmMAQ2AP7IY/tKqH0RiITaFyUkgSLQBIbABsDfrjK2r5TaF4FIqX1RQhIoAk1gCGwA/JHH9pVS+yIQKbUvSkgCRaAJDIENgD/y2L5Sal8EIqX2RQlJoAg0gSGwAfBHHttXSu2LQKTUvighCRSBJjAENgD+yO/2nlH7IhAptS9KSAJFoAkMgQ2AP/LYvlJqXwQipfZFCUmgCDSBIbAB8Ece21dK7YtApNS+KCEJFIEmMAQ2AP7IY/tKqX0RiJTaFyUkgSLQBIbABsAfeWxfKbUvApFS+6KEJFAEmsAQ2AD4m0vHKjLffoXTLkbhqiZ/yN0qWpZV5ZbN2YFNZPPdd5+Yb78zAvtO98FfIxnXoIt62/EnyrJqb2RNWYWuavpuC/TGVY/9Tvq6HeSlaLa7h3dHt9v1dXpmtrvHv4Or+MzGIWjnPOtH2ic9P7PbjeXT8eTbXyT4Nase86KO1u6hvZCjX9pzVtttnf3tpnzuN2d/KZum3PQ3n/oNgZ23Sz6UZbP7Ybr73YSX56isclc0Wbft72KyzopVvcye3SR6bv+sFvn/XL9HvP/9hbeNpEfDz+OW8u6Kd79zcfl/UEsDBBQAAAAIABkVPF3IcP2eOAMAAG0RAAANAAAAeGwvc3R5bGVzLnhtbO1YbW+bMBD+K4gfMJLQsjCFSB1rpEnbVKn9sK9OMIklg5kxXdJfP5/NWxqOJt0qTdOC2th39zz3+HwYlEWpDpze7yhVzj7jeRm5O6WKD55XbnY0I+U7UdBce1IhM6L0VG69spCUJCWAMu7NJpPAywjL3eUir7JVpkpnI6pcRe7EdbzlIhV5Zwpca9CxJKPOI+GRGxPO1pLZYJIxfrD2mbFsBBfSUVoNjdypMZVPNmBaT0FqzZWxXEhj9Wwa+5/VgB6j3K61wsn7FVxHtPNT/LqPb9P75wZOTgO75d9IRrgJGASHY9h+6Yazma9SIxnn7S74rjUsFwVRisp8pScWZKynvnr8cCj0LmwlOUxn1+75iFJwlkDSbdwv/u3sdvXpxvL0sC2r+dLi10ImVLbyr9zGtFxwmirAS7bdmYEShamlUEpkMEoY2Yqc2PU1sO7bhJnbIHLVzrTxUYPYj1ujIXqA5gUVF9KPKjapziSE2EbUmRATbPWfidChv13HeqC3ekM5vweW72m731PNtU8de7p8TszBAm3dDHWT1ENLU08gU5/Okvd4w9fxFuxRqI+VXkJu5j8qoeidpCnbm/k+7QRg9NO3pZ/h9KQo+OGGs22eUVvcszMuF6TBOTsh2ZPOBifORhuoPnUfqVRs07f8lKR4oHvVHGrePsVF+29bE2xHLyjAa+hnf4b+qqOf9en9v3lHr5Ga/BfdioYjekhyo9Krz6zeyXh0LrZWB94KIvcbvKjxXk+tK8YVy+vZjiUJzU+PR82vyFq/Ch4l0FEJTUnF1UPrjNxu/JUmrMrCNuoOilFHdeMv8EiZBt27l07G8oTuaRLXU/2MiJGHxXPXynwQF4qyTsQFTjQXKgNFWRya619c1xxfl3WiCufDrjmOmuMoixt0xeZCcyGoUH+QJYeh7wcBWt44HpYRozUMAvhDCFGFgEFzQbZLKz/SACNt80JvoLs82jbokkdaFF3ySOXBhdQQMGGINACaCzDopqAdBSKQXNBqCMr3YZ9RhehtPuIKQ9QFTYp0bxBghQrgQvYLvYl8PwwRFzgRGb6PuuCGHXGhMkAI6vLr3wCePc+85jnndT+wLH8BUEsDBBQAAAAIABkVPF23R+uKwAAAABYCAAALAAAAX3JlbHMvLnJlbHOdkktuAjEMQK8SZV9MqcQCMazYsEOIC7iJ56OZxJFjxPT2jdjAIGgRS/+eni2vDzSgdhxz26VsxjDEXNlWNa0AsmspYJ5xolgqNUtALaE0kND12BAs5vMlyC3Dbta3THP8SfQKkeu6c7RldwoU9QH4rsOaI0pDWtlxgDNL/83czwrUmp2vrOz8pzXwpszz9SCQokdFcCz0kaRMi3aUrz6e3b6k86VjYrR43+j/89CoFD35v50wpYnS10UJJm+w+QVQSwMEFAAAAAgAGRU8Xdc1VuI0AQAAKQIAAA8AAAB4bC93b3JrYm9vay54bWyNkNFOwzAMRX+lygfQbsAkpnUvTINJCBBDe09bd7WWxJXjbrCvJ2kpTOKFJ8fX1sm9XpyIDwXRIfmwxvk556oRaedp6ssGrPZX1IILs5rYagkt71OqayxhRWVnwUk6zbJZymC0IDnfYOvVQPsPy7cMuvINgFgzoKxGp5aL0dkrJ+llRwJl/CmqUdkhnPzvQmyTI3os0KB85qp/G1CJRYcWz1DlKlOJb+j0SIxncqLNtmQyJleTYbADFiz/yNto810XvldEF28xc65mWQDWyF76jZ6vg8kjhOWh64TWaAR4pQUemLoW3b7HhBjpRY7+FGNNnLaQq3U4WHIdPQRtUw1+JIAu0vEcw4A31Tdy5FRQo4PqOYB8HIRUZThpLD1penM7uQvuO2Pug/binkhXP8bGqy6/AFBLAwQUAAAACAAZFTxdM+vjuq0AAAD7AQAAGgAAAHhsL19yZWxzL3dvcmtib29rLnhtbC5yZWxztZE9DoMwDIWvEuUAGKjUoQKmLqwVF4iC+RGBRLGrwu0bwQBIHbowWc+Wv/dkZy80ins7Udc7EvNoJsplx+weAKQ7HBVF1uEUJo31o+IgfQtO6UG1CGkc38EfGbLIjkxRLQ7/Idqm6TU+rX6POPEPMHysH6hDZCkq5VvkXMJs9jbBWpIokKUo61z6sk6kgMsSES8GaY+z6ZN/eqU/h13c7Ve5Nc9HuK0h4PTr4gtQSwMEFAAAAAgAGRU8XZuGQoQbAQAA1wMAABMAAABbQ29udGVudF9UeXBlc10ueG1srZPPTsMwDMZfpep1ajM4cEDrLowr7MALhMRdo+afYm90b4/bskqgsQ2VS6PG9vdz/CWrt2MEzDpnPVZ5QxQfhUDVgJNYhgieI3VIThL/pp2IUrVyB+J+uXwQKngCTwX1Gvl6tYFa7i1lzx1vowm+yhNYzLOnMbFnVbmM0RoliePi4PUPSvFFKLlyyMHGRFxwQp6Js4gh9CvhVPh6gJSMhmwrE71Ix2miswLpaAHLyxpnugx1bRTooPaOS0qMCaTGBoCcLUfRxRU08ZBh/N7NbmCQuUjk1G0KEdm1BH/nnWzpq4vIQpDIXDnkhGTt2SeE3nEN+lY4T/gjpHbwBMWwzB/zd58n/VsaeQ+h/e971q+lk8ZPDYjhPa8/AVBLAQIUAxQAAAAIABkVPF1Gx01IlQAAAM0AAAAQAAAAAAAAAAAAAACAAQAAAABkb2NQcm9wcy9hcHAueG1sUEsBAhQDFAAAAAgAGRU8XZploSvrAAAAywEAABEAAAAAAAAAAAAAAIABwwAAAGRvY1Byb3BzL2NvcmUueG1sUEsBAhQDFAAAAAgAGRU8XZlcnCMQBgAAnCcAABMAAAAAAAAAAAAAAIAB3QEAAHhsL3RoZW1lL3RoZW1lMS54bWxQSwECFAMUAAAACAAZFTxddPGKO40HAAB/MQAAGAAAAAAAAAAAAAAAgIEeCAAAeGwvd29ya3NoZWV0cy9zaGVldDEueG1sUEsBAhQDFAAAAAgAGRU8Xchw/Z44AwAAbREAAA0AAAAAAAAAAAAAAIAB4Q8AAHhsL3N0eWxlcy54bWxQSwECFAMUAAAACAAZFTxdt0frisAAAAAWAgAACwAAAAAAAAAAAAAAgAFEEwAAX3JlbHMvLnJlbHNQSwECFAMUAAAACAAZFTxd1zVW4jQBAAApAgAADwAAAAAAAAAAAAAAgAEtFAAAeGwvd29ya2Jvb2sueG1sUEsBAhQDFAAAAAgAGRU8XTPr47qtAAAA+wEAABoAAAAAAAAAAAAAAIABjhUAAHhsL19yZWxzL3dvcmtib29rLnhtbC5yZWxzUEsBAhQDFAAAAAgAGRU8XZuGQoQbAQAA1wMAABMAAAAAAAAAAAAAAIABcxYAAFtDb250ZW50X1R5cGVzXS54bWxQSwUGAAAAAAkACQA+AgAAvxcAAAAA' },
+  GST: { name: "GST class profile (already filled)", file: "sample-template-GST-filled.xlsx", data: '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' },
+  A: { name: "Class reading summary (blank)", file: "sample-template-A.xlsx", data: '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' },
 };
 
 </script>
 <script>
-/* Phil-IRI Recorder - screens and interactions */
+/* Phil-IRI Recorder - screens and interactions
+ *
+ * Main flow for teachers: upload a form -> type into a table that has the
+ * same columns as the form -> save / print. Everything else is secondary.
+ */
 (function () {
   'use strict';
   const { PERIODS, LANGS, LEVELS } = Data;
@@ -1865,20 +2116,23 @@ window.SAMPLE_TEMPLATES = {
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const esc = s => String(s ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
   const GRADES = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
-  const KIND_LABEL = { class: 'Class list', grade: 'Grade level summary', school: 'School summary', learner: 'Individual record', none: 'Not a form' };
-  const PERIOD_LABEL = { BOSY: 'BOSY', MOSY: 'MOSY', EOSY: 'EOSY' };
+  const KIND_LABEL = { class: 'Class form', grade: 'Grade level summary', school: 'School summary', learner: 'Individual record', none: 'Not a form' };
+  const PERIOD_LABEL = { BOSY: 'BOSY (Pre-test)', MOSY: 'MOSY (Midyear)', EOSY: 'EOSY (Post-test)' };
   const PAPER = [['', 'As in template'], ['9', 'A4'], ['1', 'Letter (8.5×11 in)'], ['14', 'Long / Folio (8.5×13 in)'], ['5', 'Legal (8.5×14 in)']];
   const isDesktop = !!window.desktop;
 
   let state = Data.emptyState();
   const tplCache = new Map();   // template id -> {buf, wb}
-  const ui = { view: 'classes', classId: null, period: 'BOSY', lang: 'Filipino', helper: false, tplId: null, sheetIdx: 0, sel: null, zoom: 0.8, print: {} };
+  const ui = { view: 'fill', form: null, classId: null, grade: null, period: 'BOSY', lang: 'Filipino', preview: false, page: {}, tplId: null, sheetIdx: 0, sel: null, zoom: 0.8 };
 
   // ---------- persistence ----------
   let saveTimer = null;
   function save() {
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => { state.ui = { view: ui.view, classId: ui.classId, period: ui.period, lang: ui.lang }; Data.kvSet('state', state); }, 250);
+    saveTimer = setTimeout(() => {
+      state.ui = { view: ui.view, form: ui.form, classId: ui.classId, grade: ui.grade, period: ui.period, lang: ui.lang };
+      Data.kvSet('state', state);
+    }, 250);
   }
   async function tplData(id) {
     if (tplCache.has(id)) return tplCache.get(id);
@@ -1894,7 +2148,7 @@ window.SAMPLE_TEMPLATES = {
     const t = $('#toast');
     t.textContent = msg; t.hidden = false;
     clearTimeout(toast.timer);
-    toast.timer = setTimeout(() => { t.hidden = true; }, 3600);
+    toast.timer = setTimeout(() => { t.hidden = true; }, 4000);
   }
 
   // Two-click confirmation (the viewer blocks confirm() dialogs)
@@ -1909,7 +2163,7 @@ window.SAMPLE_TEMPLATES = {
 
   // ---------- saving files ----------
   async function saveBlob(name, blob) {
-    name = name.replace(/[–—]/g, '-').replace(/[\\/:*?"<>|]+/g, ' ').replace(/[^\x20-\x7E\u00C0-\u017F]/g, '').replace(/\s+/g, ' ').trim();
+    name = name.replace(/[–—]/g, '-').replace(/[\\/:*?"<>|]+/g, ' ').replace(/[^\x20-\x7EÀ-ſ]/g, '').replace(/\s+/g, ' ').trim();
     if (window.desktop) {
       const bytes = new Uint8Array(await blob.arrayBuffer());
       const path = await window.desktop.saveFile(name, bytes);
@@ -1936,502 +2190,379 @@ window.SAMPLE_TEMPLATES = {
 
   // ---------- helpers ----------
   const syClasses = () => state.classes.filter(c => c.sy === state.sy)
-    .sort((a, b) => (+a.grade) - (+b.grade) || (a.section || '').localeCompare(b.section || ''));
-  const className = c => c ? `Grade ${c.grade} – ${c.section || 'no section'}` : '';
-  function currentClass() {
-    const list = syClasses();
-    let c = list.find(x => x.id === ui.classId);
-    if (!c) { c = list[0] || null; ui.classId = c ? c.id : null; }
-    return c;
-  }
+    .sort((a, b) => (+a.grade || 99) - (+b.grade || 99) || (a.section || '').localeCompare(b.section || ''));
+  const className = c => c ? (c.grade || c.section ? `Grade ${c.grade || '?'} – ${c.section || 'no section'}` : 'New class') : '';
   function options(list, value) {
-    return list.map(o => { const [v, l] = Array.isArray(o) ? o : [o, o]; return `<option value="${esc(v)}"${String(v) === String(value) ? ' selected' : ''}>${esc(l)}</option>`; }).join('');
+    return list.map(o => { const [v, l] = Array.isArray(o) ? o : [o, o]; return `<option value="${esc(v)}"${String(v) === String(value ?? '') ? ' selected' : ''}>${esc(l)}</option>`; }).join('');
   }
   function seg(name, values, current, labels = {}) {
     return `<div class="seg" role="group" data-seg="${name}">${values.map(v => `<button type="button" data-v="${esc(v)}" aria-pressed="${v === current}">${esc(labels[v] || v)}</button>`).join('')}</div>`;
   }
+  const b64ToBuf = b64 => { const bin = atob(b64); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u.buffer; };
+  const todayText = () => new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  function allForms() {
+    const out = [];
+    for (const t of state.templates) t.sheets.forEach((m, i) => { if (m.kind !== 'none') out.push({ t, m, i, key: t.id + ':' + i }); });
+    return out;
+  }
+  function currentForm() {
+    const forms = allForms();
+    let f = forms.find(x => x.key === ui.form);
+    if (!f) { f = forms[0] || null; ui.form = f ? f.key : null; }
+    return f;
+  }
+  function currentClass(create) {
+    const list = syClasses();
+    let c = list.find(x => x.id === ui.classId);
+    if (!c) c = list[0] || null;
+    if (!c && create) {
+      c = { id: Data.uid('c'), sy: state.sy, grade: '', section: '', adviser: '', designation: '', learners: [] };
+      state.classes.push(c); save();
+    }
+    ui.classId = c ? c.id : null;
+    return c;
+  }
+  function formLang(f) { return (f && f.m.language) || ui.lang; }
 
   // ---------- render root ----------
   function render() {
     $$('.nav-item').forEach(b => b.setAttribute('aria-current', b.dataset.view === ui.view ? 'page' : 'false'));
     $('#brand-sy').textContent = 'School year ' + state.sy;
-    $('#rail-foot').textContent = isDesktop ? 'Desktop app · data saved on this computer' : 'Test version · data stays in this browser. Use School & settings › Save backup.';
-    $('#banner').innerHTML = state.sample ? `<div class="banner"><span><b>Sample data.</b> The classes and learners here are made-up examples so you can try the app.</span><button class="btn small" data-act="clear-sample" type="button">Clear sample data and start</button></div>` : '';
+    $('#rail-foot').textContent = isDesktop ? 'Your work is saved on this computer automatically.' : 'Test version: your work is kept in this browser. Save a backup in Settings.';
+    $('#banner').innerHTML = '';
     const v = $('#view');
-    if (ui.view === 'classes') v.innerHTML = viewClasses();
-    else if (ui.view === 'results') v.innerHTML = viewResults();
-    else if (ui.view === 'templates') { v.innerHTML = ui.tplId ? '<div class="empty">Opening template…</div>' : viewTemplates(); if (ui.tplId) renderMapper(); }
-    else if (ui.view === 'print') { v.innerHTML = viewPrint(); refreshPreview(); }
+    if (ui.view === 'fill') v.innerHTML = viewFill();
+    else if (ui.view === 'templates') { v.innerHTML = ui.tplId ? '<div class="empty">Opening form…</div>' : viewTemplates(); if (ui.tplId) renderMapper(); }
+    else if (ui.view === 'classes') v.innerHTML = viewClasses();
     else if (ui.view === 'settings') v.innerHTML = viewSettings();
+    if (ui.view === 'fill' && ui.preview) refreshPreview();
   }
 
-  // ================= Classes & learners =================
-  function viewClasses() {
-    const list = syClasses();
-    const c = currentClass();
-    const listHtml = list.length ? list.map(x => `
-      <button class="class-item" type="button" data-act="pick-class" data-id="${x.id}" aria-current="${c && x.id === c.id}">
-        <span><b>${esc(className(x))}</b><br><small>${esc(x.adviser || 'No adviser yet')}</small></span>
-        <span class="chip num">${x.learners.length}</span>
-      </button>`).join('') : '<div class="empty">No classes yet for this school year.</div>';
+  // ================= Fill in forms =================
+  function uploadBox(big) {
+    const samples = Object.entries(window.SAMPLE_TEMPLATES || {});
+    return `<div class="drop${big ? ' big' : ''}" id="drop">
+      <b>${big ? 'Upload your DepEd form to start' : 'Upload another form'}</b>
+      <span class="muted">Excel file (.xlsx) exactly as you received it. Blank or already filled in, both work.</span>
+      <div class="row" style="justify-content:center">
+        <span class="btn primary file-btn">Choose Excel file…<input type="file" id="tpl-file" accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"></span>
+      </div>
+      ${big && samples.length ? `<span class="muted">No file at hand? Try a sample: ${samples.map(([k, s]) => `<button class="btn quiet small" type="button" data-act="load-sample-tpl" data-k="${k}">${esc(s.name)}</button>`).join(' ')}</span>` : ''}
+    </div>`;
+  }
 
-    let detail = '<div class="panel empty">Add a class to start listing learners.</div>';
-    if (c) {
-      const learners = Data.sortLearners(c.learners);
-      const rows = ['M', 'F', ''].map(sex => {
-        const grp = learners.filter(l => (l.sex || '') === sex);
-        if (!grp.length) return '';
-        const title = sex === 'M' ? 'Male' : sex === 'F' ? 'Female' : 'Sex not set';
-        return `<tr class="sep"><td colspan="8">${title} · ${grp.length}</td></tr>` + grp.map((l, i) => `
-          <tr data-lid="${l.id}">
-            <td class="idx">${i + 1}</td>
-            <td class="w-lrn"><input type="text" id="lrn-${l.id}" data-f="lrn" value="${esc(l.lrn)}" inputmode="numeric" aria-label="LRN"></td>
-            <td><input type="text" id="last-${l.id}" data-f="last" value="${esc(l.last)}" aria-label="Last name"></td>
-            <td><input type="text" id="first-${l.id}" data-f="first" value="${esc(l.first)}" aria-label="First name"></td>
-            <td><input type="text" id="middle-${l.id}" data-f="middle" value="${esc(l.middle)}" aria-label="Middle name"></td>
-            <td style="width:70px"><input type="text" id="ext-${l.id}" data-f="ext" value="${esc(l.ext)}" aria-label="Extension (Jr., III)"></td>
-            <td class="w-sex"><select id="sex-${l.id}" data-f="sex" aria-label="Sex">${options([['', '–'], ['M', 'M'], ['F', 'F']], l.sex)}</select></td>
-            <td style="width:40px"><button class="btn quiet small danger" type="button" data-act="del-learner" title="Remove learner">✕</button></td>
-          </tr>`).join('');
-      }).join('');
-      detail = `
-      <div class="panel stack">
-        <div class="grid2">
-          <label class="field"><span>Grade</span><select id="c-grade" data-cf="grade">${options(GRADES.map(g => [g, 'Grade ' + g]), c.grade)}</select></label>
-          <label class="field"><span>Section</span><input type="text" id="c-section" data-cf="section" value="${esc(c.section)}"></label>
-          <label class="field"><span>Teacher / assessor</span><input type="text" id="c-adviser" data-cf="adviser" value="${esc(c.adviser)}"></label>
-          <label class="field"><span>Designation</span><input type="text" id="c-designation" data-cf="designation" value="${esc(c.designation)}" placeholder="Teacher I"></label>
-        </div>
-      </div>
-      <div class="panel flush">
-        <div class="row" style="padding:12px 14px;justify-content:space-between">
-          <h2>Learners <span class="muted num">(${c.learners.length})</span></h2>
-          <div class="row">
-            <button class="btn small" type="button" data-act="add-learner">Add learner</button>
-            <button class="btn small quiet danger" type="button" data-act="del-class">Delete class</button>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table class="grid" id="learner-table">
-            <thead><tr><th></th><th>LRN</th><th>Last name</th><th>First name</th><th>Middle name</th><th>Ext.</th><th>Sex</th><th></th></tr></thead>
-            <tbody>${rows || '<tr><td colspan="8" class="empty">No learners yet. Add them one by one, or paste a list from Excel below.</td></tr>'}</tbody>
-          </table>
-        </div>
-      </div>
-      <div class="panel stack">
-        <h2>Paste a class list</h2>
-        <p class="muted">Copy rows from Excel or SF1 and paste them here. Use columns in this order: <b>LRN, Last name, First name, Middle name, Sex</b>. A single “DELA CRUZ, JUAN PEREZ” name column also works; add the sex in the next column.</p>
-        <textarea id="paste-box" rows="4" placeholder="Paste here…"></textarea>
-        <div class="row"><button class="btn primary small" type="button" data-act="paste-learners">Add these learners</button><span class="muted" id="paste-hint"></span></div>
-      </div>`;
+  function viewFill() {
+    const f = currentForm();
+    if (!f) {
+      return `
+        <div class="head"><div><h1>Phil-IRI Recorder</h1><p>Record BOSY, MOSY and EOSY results and print them on the DepEd form, exactly as it looks.</p></div></div>
+        <ol class="steps">
+          <li><b>Upload the form</b><span>The Excel template from DepEd or your division.</span></li>
+          <li><b>Type names and scores</b><span>In a table with the same columns as the form.</span></li>
+          <li><b>Save and print</b><span>You get the same form, filled in.</span></li>
+        </ol>
+        ${uploadBox(true)}`;
     }
-    return `
-      <div class="head">
-        <div><h1>Classes &amp; learners</h1><p>One entry per class you assess. Learners are kept separate from any template, so they carry over to next year’s forms.</p></div>
-        <div class="row">
-          <label class="field"><span>School year</span><input type="text" id="sy-input" value="${esc(state.sy)}" list="sy-list" style="width:130px"></label>
-          <datalist id="sy-list">${[...new Set(state.classes.map(x => x.sy).concat(state.sy))].map(s => `<option value="${esc(s)}">`).join('')}</datalist>
-        </div>
-      </div>
-      <div class="split">
-        <div class="stack">
-          <div class="class-list">${listHtml}</div>
-          <button class="btn" type="button" data-act="add-class">Add class</button>
-        </div>
-        <div class="stack">${detail}</div>
+    const forms = allForms();
+    const groups = {};
+    for (const x of forms) (groups[x.t.name] = groups[x.t.name] || []).push(x);
+    const formSelect = Object.entries(groups).map(([n, xs]) => `<optgroup label="${esc(n)}">${xs.map(x => `<option value="${x.key}"${x.key === f.key ? ' selected' : ''}>${esc(x.m.sheetName)}</option>`).join('')}</optgroup>`).join('');
+    const kind = f.m.kind;
+    const lang = formLang(f);
+    let who = '';
+    if (kind === 'class' || kind === 'learner') {
+      const cls = currentClass(true);
+      who = `<label class="field"><span>Class</span><select id="fill-class">${options(syClasses().map(c => [c.id, className(c)]).concat([['__new', '+ Add another class']]), cls.id)}</select></label>`;
+    } else if (kind === 'grade') {
+      const grades = [...new Set(syClasses().map(c => String(c.grade)).filter(Boolean))].sort((a, b) => a - b);
+      if (!grades.includes(String(ui.grade))) ui.grade = grades[0] || '';
+      who = `<label class="field"><span>Grade</span><select id="fill-grade">${options(grades.length ? grades.map(g => [g, 'Grade ' + g]) : [['', 'No classes yet']], ui.grade)}</select></label>`;
+    }
+    const top = `
+      <div class="panel toolbar">
+        <label class="field grow"><span>Form</span><select id="fill-form">${formSelect}</select></label>
+        ${who}
+        <div class="field"><span>Period</span>${seg('period', PERIODS, ui.period, { BOSY: 'BOSY', MOSY: 'MOSY', EOSY: 'EOSY' })}</div>
+        <div class="field"><span>Language</span>${f.m.language ? `<span class="chip ok big">${f.m.language}</span>` : seg('lang', LANGS, ui.lang)}</div>
       </div>`;
+    let body = '';
+    if (kind === 'class') body = fillClass(f, lang);
+    else if (kind === 'learner') body = `<div class="panel stack"><h2>One page per learner</h2><p class="muted">This form is filled once for every learner in the class. Saving gives you a .zip with one Excel file per learner.</p></div>${detailsPanel(f)}`;
+    else body = `<div class="panel stack"><h2>${kind === 'grade' ? 'Filled in automatically from your sections' : 'Filled in automatically from all classes'}</h2>
+      <p class="muted">This summary counts learners from the class forms you have filled in for ${esc(PERIOD_LABEL[ui.period])}, ${esc(lang)}. To include other teachers’ sections, use <b>Settings › Add a colleague’s classes</b>.</p></div>${detailsPanel(f)}`;
+    const preview = kind === 'class' ? ui.preview : true;
+    return `
+      <div class="head"><div><h1>${esc(f.m.sheetName)}</h1><p class="muted">${esc(f.t.name)} · ${KIND_LABEL[kind]}</p></div></div>
+      ${top}
+      ${body}
+      <div class="savebar">
+        <button class="btn primary" type="button" data-act="save-form">Save as Excel file</button>
+        ${isDesktop ? '<button class="btn" type="button" data-act="open-form">Open in Excel to print</button>' : ''}
+        ${kind === 'class' ? `<button class="btn" type="button" data-act="toggle-preview">${ui.preview ? 'Hide printout' : 'See how it prints'}</button>` : ''}
+        <details class="pagesetup"><summary>Page setup</summary>
+          <div class="stack" style="margin-top:8px">
+            <label class="row" style="gap:6px"><input type="checkbox" id="pg-fit" ${ui.page.fit !== false ? 'checked' : ''}> Fit to page width</label>
+            <label class="field"><span>Orientation</span><select id="pg-orient">${options([['', 'As in form'], ['portrait', 'Portrait'], ['landscape', 'Landscape']], ui.page.orient ?? ((kind === 'grade' || kind === 'school') ? 'landscape' : ''))}</select></label>
+            <label class="field"><span>Paper</span><select id="pg-paper">${options(PAPER, ui.page.paper || '')}</select></label>
+          </div>
+        </details>
+        <span class="muted" id="save-note"></span>
+      </div>
+      <div id="pr-warn"></div>
+      <div class="preview-wrap" id="preview"${preview ? '' : ' hidden'}><div class="empty">Preparing preview…</div></div>`;
   }
 
-  function parseLearnerRows(text) {
-    const out = [];
-    for (const line of text.split(/\r?\n/)) {
-      if (!line.trim()) continue;
-      let cols = line.split('\t').map(s => s.trim());
-      if (cols.length === 1 && line.includes(',') && line.split(',').length > 2 && !/\d{6,}/.test(line)) cols = line.split(',').map(s => s.trim());
-      const l = { id: Data.uid('l'), lrn: '', last: '', first: '', middle: '', ext: '', sex: '' };
-      if (/^\d{6,}$/.test(cols[0] || '')) l.lrn = cols.shift();
-      const sexIdx = cols.findIndex(x => /^(m|f|male|female|lalaki|babae)$/i.test(x));
-      if (sexIdx >= 0) { l.sex = /^(f|female|babae)$/i.test(cols[sexIdx]) ? 'F' : 'M'; cols.splice(sexIdx, 1); }
-      cols = cols.filter(Boolean);
-      if (cols.length === 1 && cols[0].includes(',')) {
-        const [last, rest] = cols[0].split(/,(.*)/s);
-        const parts = rest.trim().split(/\s+/);
-        l.last = last.trim();
-        const ext = parts.findIndex(p => /^(jr\.?|sr\.?|ii|iii|iv)$/i.test(p));
-        if (ext >= 0) l.ext = parts.splice(ext, 1)[0];
-        if (parts.length > 1) { l.middle = parts.pop().replace(/\.$/, ''); }
-        l.first = parts.join(' ');
-      } else {
-        [l.last = '', l.first = '', l.middle = ''] = cols;
+  // the "header" values of a form: school, teacher, grade & section, date...
+  const DETAIL_FIELDS = {
+    'school.name': ['School', 'school', 'name'], 'school.id': ['School ID', 'school', 'id'],
+    'school.idName': null, 'school.district': ['District', 'school', 'district'], 'school.division': ['Division', 'school', 'division'],
+    'school.region': ['Region', 'school', 'region'], 'school.head': ['School head', 'school', 'head'],
+    'school.chair': ['Grade level chairperson', 'school', 'chair'], 'school.coordinator': ['Reading coordinator', 'school', 'coordinator'],
+    'class.adviser': ['Teacher / assessor', 'class', 'adviser'], 'class.designation': ['Designation', 'class', 'designation'],
+    'class.section': ['Section', 'class', 'section'], 'class.grade': ['Grade', 'class', 'grade'], 'date': ['Date of assessment', 'date', ''],
+  };
+  function detailsPanel(f) {
+    const keys = new Set();
+    for (const fl of f.m.fields) {
+      if (fl.key === 'school.idName') { keys.add('school.id'); keys.add('school.name'); }
+      else if (fl.key === 'class.gradeSection') { keys.add('class.grade'); keys.add('class.section'); }
+      else if (DETAIL_FIELDS[fl.key]) keys.add(fl.key);
+    }
+    const kind = f.m.kind;
+    if (kind === 'grade' || kind === 'school') { keys.delete('class.section'); keys.delete('class.adviser'); keys.delete('class.designation'); keys.delete('class.grade'); }
+    if (!keys.size) return '';
+    const cls = currentClass(false) || {};
+    const order = Object.keys(DETAIL_FIELDS);
+    const inputs = [...keys].sort((a, b) => order.indexOf(a) - order.indexOf(b)).map(k => {
+      const [label, where, prop] = DETAIL_FIELDS[k];
+      let val = where === 'school' ? state.school[prop] : where === 'class' ? cls[prop] : ((state.dates || {})[`${cls.id}:${ui.period}`] || '');
+      const id = 'd-' + k.replace('.', '-');
+      if (k === 'class.grade') return `<label class="field"><span>${label}</span><select id="${id}" data-detail="${k}">${options([['', '–']].concat(GRADES.map(g => [g, 'Grade ' + g])), val)}</select></label>`;
+      return `<label class="field"><span>${label}</span><input type="text" id="${id}" data-detail="${k}" value="${esc(val)}"${k === 'date' ? ` placeholder="${esc(todayText())}"` : ''}></label>`;
+    }).join('');
+    return `<div class="panel stack"><h2>Form details</h2><div class="grid2">${inputs}</div>
+      <p class="muted small">These fill the top of the form. School details are remembered for all your forms.</p></div>`;
+  }
+
+  // ---------- the entry table ----------
+  const EDITABLE_X = ['number', 'text', 'check'];
+  function colKind(c) {
+    if (c.key === 'row.no') return 'no';
+    if (c.key === 'learner.name') return 'name';
+    if (c.key === 'learner.lrn') return 'lrn';
+    if (c.key === 'learner.sex') return c.choice ? 'sexmark' : 'sex';
+    if (c.key === 'a.level') return c.choice ? 'lvlmark' : 'lvl';
+    if (c.key === 'a.indepGrade') return 'grade';
+    if (c.key === 'a.struggling' || c.key === 'a.nonReader') return 'flag';
+    if (c.key === 'a.remarks') return 'remarks';
+    if (c.key && c.key.startsWith('x:')) return 'x-' + (c.input || 'text');
+    if (['a.gst', 'a.miscues', 'a.words', 'a.time', 'a.compCorrect'].includes(c.key)) return 'num';
+    return 'auto';
+  }
+  const RES_FIELD = { 'a.gst': 'gst', 'a.miscues': 'miscues', 'a.words': 'words', 'a.time': 'time', 'a.compCorrect': 'compCorrect' };
+
+  function headRows(columns) {
+    const deep = columns.some(c => (c.chain || []).length > 1);
+    if (!deep) return `<tr>${columns.map(c => `<th>${esc((c.chain || [c.label]).join(' '))}</th>`).join('')}<th></th></tr>`;
+    let r1 = '', r2 = '';
+    for (let i = 0; i < columns.length; i++) {
+      const c = columns[i], ch = c.chain || [c.label || ''];
+      if (ch.length < 2) { r1 += `<th rowspan="2">${esc(ch.join(' '))}</th>`; continue; }
+      let j = i;
+      while (j + 1 < columns.length && (columns[j + 1].chain || [])[0] === ch[0] && (columns[j + 1].chain || []).length > 1) j++;
+      r1 += `<th colspan="${j - i + 1}" class="grp">${esc(ch[0])}</th>`;
+      for (let k = i; k <= j; k++) {
+        const cc = columns[k].chain;
+        const sub = cc.slice(1).filter(t => t !== ch[0]);
+        r2 += `<th>${esc(sub[sub.length - 1] || '')}</th>`;
       }
-      if (l.last || l.first) out.push(l);
+      i = j;
     }
-    return out;
+    return `<tr>${r1}<th rowspan="2"></th></tr><tr>${r2}</tr>`;
   }
 
-  // ================= Reading results =================
-  function viewResults() {
-    const list = syClasses();
-    if (!list.length) return `<div class="head"><div><h1>Reading results</h1></div></div><div class="panel empty">Add a class first under <b>Classes &amp; learners</b>.</div>`;
-    const c = currentClass();
-    const learners = Data.sortLearners(c.learners);
-    const counts = { Independent: 0, Instructional: 0, Frustration: 0, nonReader: 0, none: 0 };
-    for (const l of learners) {
-      const r = Data.result(state, l.id, ui.period, ui.lang);
-      const lvl = r.level || Data.computed(r, state.settings).suggested;
-      if (r.nonReader) counts.nonReader++;
-      if (lvl) counts[lvl]++; else if (!r.nonReader) counts.none++;
+  function cellHtml(c, ci, li, l, res, rowCols, n) {
+    const k = colKind(c);
+    const id = `g-${li}-${ci}-${l.id}`;
+    const at = `id="${id}" data-li="${li}" data-ci="${ci}"`;
+    const x = res.x || {};
+    switch (k) {
+      case 'no': return `<td class="idx">${n}</td>`;
+      case 'name': return `<td class="namecell"><input type="text" ${at} value="${esc(Data.fullName(l, state.settings))}" aria-label="Name"></td>`;
+      case 'lrn': return `<td><input type="text" ${at} value="${esc(l.lrn)}" inputmode="numeric" aria-label="LRN"></td>`;
+      case 'sex': return `<td><select ${at} aria-label="Sex">${options([['', '–'], ['M', 'M'], ['F', 'F']], l.sex)}</select></td>`;
+      case 'sexmark': return `<td class="center"><button type="button" class="mark" ${at} aria-pressed="${l.sex === c.choice}" aria-label="${c.choice}">${l.sex === c.choice ? '●' : ''}</button></td>`;
+      case 'lvlmark': { const on = (res.level || '') === c.choice; return `<td class="center"><button type="button" class="mark lvl-${c.choice}" ${at} aria-pressed="${on}" aria-label="${c.choice}">${on ? '●' : ''}</button></td>`; }
+      case 'lvl': return `<td><select ${at} aria-label="Reading level">${options([['', '–']].concat(LEVELS.map(x2 => [x2, x2])), res.level || '')}</select></td>`;
+      case 'grade': return `<td><select ${at} aria-label="Grade level">${options([['', '–']].concat(GRADES.map(g => [g, 'Grade ' + g])), res.indepGrade || '')}</select></td>`;
+      case 'flag': return `<td class="center"><input type="checkbox" ${at} ${res[c.key === 'a.struggling' ? 'struggling' : 'nonReader'] ? 'checked' : ''}></td>`;
+      case 'remarks': return `<td><input type="text" ${at} value="${esc(res.remarks)}"></td>`;
+      case 'num': return `<td class="numcell"><input type="number" ${at} value="${esc(res[RES_FIELD[c.key]])}"></td>`;
+      case 'x-number': return `<td class="numcell"><input type="number" ${at} value="${esc(x[c.key])}"></td>`;
+      case 'x-text': return `<td><input type="text" ${at} value="${esc(x[c.key])}"></td>`;
+      case 'x-check': return `<td class="center"><input type="checkbox" ${at} ${x[c.key] ? 'checked' : ''}></td>`;
+      case 'x-total': {
+        if (!(c.sumOf || []).length) return `<td class="numcell"><input type="number" ${at} value="${esc(x[c.key])}"></td>`;
+        const v = Data.extraValue(c, res);
+        return `<td class="auto num" data-auto="${ci}">${v ?? ''}</td>`;
+      }
+      case 'x-cond': { const rc = rowCols[ci]; const v = Data.extraValue(rc, res); return `<td class="auto center" data-auto="${ci}">${v ? '✓' : ''}</td>`; }
+      default: return `<td class="auto muted center" title="Worked out by the form itself">auto</td>`;
     }
-    const helperHead = ui.helper ? '<th>Words</th><th>Miscues</th><th>Correct</th><th>Items</th><th>Word %</th><th>Comp. %</th><th>Suggests</th>' : '';
-    const rows = ['M', 'F', ''].map(sex => {
-      const grp = learners.filter(l => (l.sex || '') === sex);
-      if (!grp.length) return '';
-      const title = sex === 'M' ? 'Male' : sex === 'F' ? 'Female' : 'Sex not set';
-      return `<tr class="sep"><td colspan="${ui.helper ? 14 : 7}">${title}</td></tr>` + grp.map((l, i) => {
-        const r = Data.result(state, l.id, ui.period, ui.lang);
-        const comp = Data.computed(r, state.settings);
-        const lvl = r.level || '';
-        const helper = ui.helper ? `
-          <td style="width:74px"><input type="number" min="0" id="w-${l.id}" data-r="words" value="${esc(r.words)}" aria-label="Words in passage"></td>
-          <td style="width:74px"><input type="number" min="0" id="m-${l.id}" data-r="miscues" value="${esc(r.miscues)}" aria-label="Miscues"></td>
-          <td style="width:70px"><input type="number" min="0" id="cc-${l.id}" data-r="compCorrect" value="${esc(r.compCorrect)}" aria-label="Correct answers"></td>
-          <td style="width:64px"><input type="number" min="0" id="ct-${l.id}" data-r="compTotal" value="${esc(r.compTotal)}" aria-label="Number of questions"></td>
-          <td class="num">${comp.wordPct ?? '–'}</td><td class="num">${comp.compPct ?? '–'}</td>
-          <td>${comp.suggested ? `<button class="btn small quiet" type="button" data-act="use-suggest" data-level="${comp.suggested}">${comp.suggested}</button>` : '<span class="muted">–</span>'}</td>` : '';
-        return `<tr data-lid="${l.id}">
-          <td class="idx">${i + 1}</td>
-          <td style="min-width:190px">${esc(Data.fullName(l, state.settings))}</td>
-          <td><div class="lvl">${LEVELS.map(L => `<button type="button" data-level="${L}" aria-pressed="${lvl === L}" title="${L}">${L.slice(0, L === 'Instructional' ? 5 : 5)}</button>`).join('')}</div>
-            ${!lvl && comp.suggested ? `<div class="suggest">from scores: ${comp.suggested}</div>` : ''}</td>
-          <td class="w-grade"><select id="ig-${l.id}" data-r="indepGrade" aria-label="Grade level where independent">${options([['', '–']].concat(GRADES.map(g => [g, 'Grade ' + g])), r.indepGrade || '')}</select></td>
-          <td class="center"><input type="checkbox" id="sr-${l.id}" data-r="struggling" ${r.struggling ? 'checked' : ''} aria-label="Struggling reader"></td>
-          <td class="center"><input type="checkbox" id="nr-${l.id}" data-r="nonReader" ${r.nonReader ? 'checked' : ''} aria-label="Non-reader"></td>
-          <td style="min-width:140px"><input type="text" id="rm-${l.id}" data-r="remarks" value="${esc(r.remarks)}" aria-label="Remarks"></td>
-          ${helper}
-        </tr>`;
-      }).join('');
-    }).join('');
-    return `
-      <div class="head">
-        <div><h1>Reading results</h1><p>Record each learner’s level for the assessment period. English and Filipino are kept separately because they print on separate forms.</p></div>
-      </div>
-      <div class="panel row" style="justify-content:space-between">
-        <div class="row">
-          <label class="field"><span>Class</span><select id="res-class">${options(list.map(x => [x.id, className(x)]), c.id)}</select></label>
-          <div class="field"><span style="font-weight:600;font-size:.85rem;color:var(--muted)">Period</span>${seg('period', PERIODS, ui.period, PERIOD_LABEL)}</div>
-          <div class="field"><span style="font-weight:600;font-size:.85rem;color:var(--muted)">Language</span>${seg('lang', LANGS, ui.lang)}</div>
-        </div>
-        <label class="row" style="gap:6px"><input type="checkbox" id="helper-toggle" ${ui.helper ? 'checked' : ''}> Show scoring helper</label>
-      </div>
-      <div class="stats">
-        <div class="stat i"><b>${counts.Independent}</b><span>Independent</span></div>
-        <div class="stat n"><b>${counts.Instructional}</b><span>Instructional</span></div>
-        <div class="stat f"><b>${counts.Frustration}</b><span>Frustration</span></div>
-        <div class="stat"><b>${counts.nonReader}</b><span>Non-readers</span></div>
-        <div class="stat"><b>${counts.none}</b><span>Not yet recorded</span></div>
-      </div>
-      <div class="panel flush">
-        <div class="table-wrap">
-          <table class="grid" id="results-table">
-            <thead><tr><th></th><th>Learner</th><th>Reading level</th><th>Independent at</th><th>Struggling</th><th>Non-reader</th><th>Remarks</th>${helperHead}</tr></thead>
-            <tbody>${rows || '<tr><td colspan="7" class="empty">This class has no learners yet.</td></tr>'}</tbody>
-          </table>
-        </div>
-      </div>
-      ${ui.helper ? `<p class="muted">The helper suggests a level from oral reading scores: word reading ${state.settings.rules.word.indep}%+ and comprehension ${state.settings.rules.comp.indep}%+ is Independent; ${state.settings.rules.word.inst}%+ and ${state.settings.rules.comp.inst}%+ is Instructional; lower is Frustration. Change the cut-offs in School &amp; settings.</p>` : ''}`;
   }
 
-  // ================= Templates =================
-  function viewTemplates() {
-    const cards = state.templates.map(t => {
-      const sheets = t.sheets.map((m, i) => {
-        const status = m.kind === 'none' ? '<span class="chip">Skipped</span>' : m.checked ? '<span class="chip ok">Checked</span>' : `<span class="chip warn">Check ${countUnsure(m)} item${countUnsure(m) === 1 ? '' : 's'}</span>`;
-        return `<div class="sheet-row">
-          <span><b>${esc(m.sheetName)}</b>${m.hidden ? ' <span class="muted">(hidden sheet)</span>' : ''}</span>
-          <span class="chip">${KIND_LABEL[m.kind]}${m.language ? ' · ' + m.language : ''}</span>
-          ${status}
-          <button class="btn small" type="button" data-act="open-sheet" data-tpl="${t.id}" data-i="${i}">Open</button>
-        </div>`;
-      }).join('');
-      return `<div class="panel tpl-card">
-        <div class="tpl-top">
-          <div><h2>${esc(t.name)}</h2><p class="muted">${esc(t.fileName)} · imported ${new Date(t.addedAt).toLocaleDateString()}${t.sample ? ' · sample layout for testing' : ''}</p></div>
-          <div class="row">
-            <button class="btn small" type="button" data-act="print-tpl" data-tpl="${t.id}">Print with this</button>
-            <button class="btn small quiet danger" type="button" data-act="del-tpl" data-tpl="${t.id}">Remove</button>
-          </div>
-        </div>
-        <div class="sheet-rows">${sheets}</div>
-      </div>`;
-    }).join('');
-    return `
-      <div class="head">
-        <div><h1>Templates</h1><p>Import the DepEd form exactly as you received it. The app reads each sheet, finds where the data goes, and prints into the original file, so the layout never changes.</p></div>
-      </div>
-      <div class="drop" id="drop">
-        <b>Drop a DepEd template here</b>
-        <span class="muted">Excel workbook (.xlsx). Old .xls files: open in Excel and save as .xlsx first.</span>
-        <div class="row" style="justify-content:center">
-          <span class="btn primary file-btn">Choose file…<input type="file" id="tpl-file" accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"></span>
-          ${Object.keys(window.SAMPLE_TEMPLATES || {}).map(k => `<button class="btn" type="button" data-act="load-sample-tpl" data-k="${k}">Try ${esc(window.SAMPLE_TEMPLATES[k].name)}</button>`).join('')}
-        </div>
-      </div>
-      ${cards || '<div class="panel empty">No templates yet.</div>'}`;
+  function fillClass(f, lang) {
+    const cls = currentClass(true);
+    let html = detailsPanel(f);
+    f.m.lists.forEach((list, li) => {
+      const found = (list.found || []).length;
+      if (found && !cls.learners.length) {
+        html += `<div class="banner"><span><b>This file already has ${found} learner${found === 1 ? '' : 's'} filled in.</b> Bring them into the app with their entries so you can keep working on them.</span><button class="btn primary small" type="button" data-act="import-found" data-li="${li}">Bring them in</button></div>`;
+      }
+      const cols = list.columns.slice().sort((a, b) => a.col - b.col);
+      const hasSexParts = list.parts.some(p => p.sex);
+      const all = Data.sortLearners(cls.learners);
+      const parts = hasSexParts ? list.parts.map(p => ({ p, learners: all.filter(l => l.sex === p.sex) })) : [{ p: list.parts[0], learners: [...all.filter(l => l.sex === 'M'), ...all.filter(l => l.sex !== 'M')] }];
+      const cap = p => list.parts.filter(pp => !hasSexParts || pp.sex === p.sex).reduce((a, pp) => a + pp.last - pp.first + 1, 0);
+      let rows = '';
+      for (const { p, learners } of parts) {
+        if (hasSexParts) rows += `<tr class="sep"><td colspan="${cols.length + 1}">${p.sex === 'M' ? 'Male' : 'Female'} <span class="muted">· ${learners.length} of ${cap(p)} rows</span></td></tr>`;
+        learners.forEach((l, i) => {
+          const res = Data.result(state, l.id, ui.period, lang);
+          const rowCols = Data.withTotals(cols, res);
+          rows += `<tr data-lid="${l.id}">${cols.map((c, ci) => cellHtml(c, ci, li, l, res, rowCols, i + 1)).join('')}<td class="rm"><button class="btn quiet small danger" type="button" data-act="rm-learner" title="Remove this learner">✕</button></td></tr>`;
+        });
+        rows += `<tr class="addrow"><td colspan="${cols.length + 1}"><input type="text" class="add-name" id="add-${li}-${p.sex || 'all'}" data-li="${li}" data-sex="${p.sex || ''}" placeholder="+ Type a learner’s name here and press Enter (or paste a list from Excel)"></td></tr>`;
+      }
+      html += `<div class="panel flush"><div class="table-wrap"><table class="grid entry" data-li="${li}"><thead>${headRows(cols)}</thead><tbody>${rows}</tbody></table></div></div>`;
+    });
+    html += `<p class="muted small">Tip: press Enter to go down a column. You can paste names or scores copied from Excel into any cell.</p>`;
+    return html;
   }
 
-  function countUnsure(m) {
-    let n = m.fields.filter(f => f.conf < 0.8).length;
-    for (const l of m.lists) n += l.columns.filter(c => c.conf < 0.8).length + (l.unknownColumns || []).length;
-    for (const s of m.summaries) n += (s.unknownColumns || []).length;
-    return n;
+  // write one grid cell into the data
+  function setGridValue(l, c, value, lang) {
+    const k = colKind(c);
+    const cls = currentClass(false);
+    if (k === 'name') {
+      if (!String(value).trim()) return;
+      const p = Data.parseName(value);
+      Object.assign(l, { last: p.last, first: p.first, middle: p.middle, ext: p.ext });
+    } else if (k === 'lrn') l.lrn = String(value).trim();
+    else if (k === 'sex') l.sex = /^f/i.test(value) ? 'F' : /^m/i.test(value) ? 'M' : '';
+    else if (k === 'sexmark') l.sex = value ? c.choice : (l.sex === c.choice ? '' : l.sex);
+    else if (k === 'lvlmark') Data.setResult(state, l.id, ui.period, lang, { level: value ? c.choice : '' });
+    else if (k === 'lvl') { const m = LEVELS.find(x => x.toLowerCase().startsWith(String(value).toLowerCase().slice(0, 4))); Data.setResult(state, l.id, ui.period, lang, { level: m || '' }); }
+    else if (k === 'grade') { const m = /(\d+)/.exec(value); Data.setResult(state, l.id, ui.period, lang, { indepGrade: m ? m[1] : '' }); }
+    else if (k === 'flag') Data.setResult(state, l.id, ui.period, lang, { [c.key === 'a.struggling' ? 'struggling' : 'nonReader']: !!value });
+    else if (k === 'remarks') Data.setResult(state, l.id, ui.period, lang, { remarks: value });
+    else if (k === 'num') Data.setResult(state, l.id, ui.period, lang, { [RES_FIELD[c.key]]: value });
+    else if (k === 'x-number' || (k === 'x-total' && !(c.sumOf || []).length)) Data.setExtra(state, l.id, ui.period, lang, c.key, value === '' ? '' : +value);
+    else if (k === 'x-text') Data.setExtra(state, l.id, ui.period, lang, c.key, value);
+    else if (k === 'x-check') Data.setExtra(state, l.id, ui.period, lang, c.key, !!value);
+    if (cls) save();
+  }
+  const truthyText = v => v === true || (typeof v === 'string' && v.trim() !== '' && !/^(x|0|no|false|-)$/i.test(v.trim()));
+
+  // refresh totals / ticks of one row without re-drawing the table
+  function refreshRow(tr, f, li) {
+    const l = findLearner(tr.dataset.lid);
+    if (!l) return;
+    const cols = f.m.lists[li].columns.slice().sort((a, b) => a.col - b.col);
+    const res = Data.result(state, l.id, ui.period, formLang(f));
+    const rowCols = Data.withTotals(cols, res);
+    for (const td of tr.querySelectorAll('td[data-auto]')) {
+      const c = rowCols[+td.dataset.auto];
+      const v = Data.extraValue(c, res);
+      td.textContent = c.input === 'cond' ? (v ? '✓' : '') : (v ?? '');
+    }
+  }
+  function findLearner(id) {
+    for (const c of state.classes) { const l = c.learners.find(x => x.id === id); if (l) return l; }
+    return null;
   }
 
-  async function importTemplate(buf, fileName, name, sample) {
-    let wb;
-    try { wb = await XL.loadWorkbook(buf.slice(0)); }
-    catch (e) { toast(e.message || 'This file could not be read as an Excel workbook.'); return; }
-    const id = Data.uid('t');
-    const sheets = wb.sheets.map(s => Detect.detectSheet(s));
-    state.templates.unshift({ id, name: name || fileName.replace(/\.xls[xm]?$/i, ''), fileName, addedAt: Date.now(), sample: !!sample, sheets });
-    await Data.kvSet('tpl:' + id, buf);
-    tplCache.set(id, { buf, wb });
+  function addLearners(names, sex) {
+    const cls = currentClass(true);
+    const added = [];
+    for (const n of names) {
+      if (!n.trim()) continue;
+      const l = Data.parseName(n);
+      l.sex = sex || '';
+      cls.learners.push(l);
+      added.push(l);
+    }
     save();
-    const forms = sheets.filter(s => s.kind !== 'none').length;
-    toast(`Imported ${fileName}: ${forms} form${forms === 1 ? '' : 's'} found in ${sheets.length} sheet${sheets.length === 1 ? '' : 's'}.`);
+    return added;
+  }
+
+  // paste a block copied from Excel into the entry table
+  function pasteBlock(target, text) {
+    const f = currentForm();
+    const lang = formLang(f);
+    const li = +target.dataset.li;
+    const cols = f.m.lists[li].columns.slice().sort((a, b) => a.col - b.col);
+    const lines = text.replace(/\r/g, '').split('\n').filter((x, i, arr) => x !== '' || i < arr.length - 1).map(x => x.split('\t'));
+    if (target.classList.contains('add-name')) {
+      const nameCi = cols.findIndex(c => c.key === 'learner.name');
+      const added = addLearners(lines.map(r => r[0]), target.dataset.sex);
+      added.forEach((l, i) => lines[i].slice(1).forEach((v, j) => { const c = cols[nameCi + 1 + j]; if (c) setGridValue(l, c, v, lang); }));
+      toast(`Added ${added.length} learner${added.length === 1 ? '' : 's'}.`);
+      render();
+      return;
+    }
+    const tr = target.closest('tr');
+    const rowsEls = $$('tr[data-lid]', tr.closest('tbody'));
+    const start = rowsEls.indexOf(tr);
+    const ci0 = +target.dataset.ci;
+    let n = 0;
+    lines.forEach((vals, i) => {
+      const rowEl = rowsEls[start + i];
+      if (!rowEl) return;
+      const l = findLearner(rowEl.dataset.lid);
+      vals.forEach((v, j) => {
+        const c = cols[ci0 + j];
+        if (!c) return;
+        const k = colKind(c);
+        if (['x-check', 'flag', 'lvlmark', 'sexmark'].includes(k)) setGridValue(l, c, truthyText(v), lang);
+        else setGridValue(l, c, v.trim(), lang);
+        n++;
+      });
+    });
+    toast(`Pasted ${n} cell${n === 1 ? '' : 's'}.`);
     render();
   }
 
-  // ---------- mapper ----------
-  const FIELD_KEYS = Object.keys(Detect.FIELD_LABELS).filter(k => !k.startsWith('a.') && k !== 'row.no');
-  const COL_KEYS = ['row.no', 'learner.name', 'learner.lrn', 'learner.sex', 'a.level', 'a.indepGrade', 'a.struggling', 'a.nonReader', 'a.remarks', 'a.gst', 'a.miscues', 'a.words', 'a.wordPct', 'a.compCorrect', 'a.compPct', 'a.wpm'];
-  const METRICS = [['enrolled', 'Enrolment'], ['level:Independent', 'Independent'], ['level:Instructional', 'Instructional'], ['level:Frustration', 'Frustration'], ['struggling', 'Struggling readers'], ['nonReader', 'Non-readers']]
-    .concat(GRADES.map(g => ['indepAt:' + g, 'Independent at Grade ' + g]));
-  const L = k => Detect.FIELD_LABELS[k] || k;
-  const confClass = c => c >= 0.8 ? 'ok' : 'warn';
-  function colLabel(col) {
-    let s = L(col.key);
-    if (col.choice) s += ' = ' + col.choice;
-    if (col.flag || col.choice) s += ` (mark “${col.mark ?? state.settings.defaultMark}”)`;
-    return s;
-  }
-
-  async function renderMapper() {
-    const t = state.templates.find(x => x.id === ui.tplId);
-    if (!t) { ui.tplId = null; render(); return; }
-    const data = await tplData(t.id);
-    if (!data) { $('#view').innerHTML = '<div class="panel empty">The template file is missing from this computer. Remove it and import it again.</div>'; return; }
-    const m = t.sheets[ui.sheetIdx] || t.sheets[0];
-    const sheet = data.wb.sheets.find(s => s.path === m.sheetPath);
-    const marks = {}, titles = {};
-    for (const f of m.fields) { marks[f.ref] = f.conf >= 0.8 ? 'mk-sure' : 'mk-check'; titles[f.ref] = `${L(f.key)} (${f.mode === 'blank' ? 'fills the ____' : f.mode === 'find' ? 'replaces “' + f.find + '”' : 'value'})`; }
-    for (const l of m.lists) {
-      for (let r = l.headerRows[0]; r <= l.headerRows[1]; r++) for (let c = l.cols[0]; c <= l.cols[1]; c++) marks[XL.makeRef(r, c)] = marks[XL.makeRef(r, c)] || 'mk-head';
-      for (const col of l.columns) for (const p of l.parts) for (let r = p.first; r <= p.last; r++) {
-        const ref = XL.makeRef(r, col.col);
-        marks[ref] = col.conf >= 0.8 ? 'mk-col' : 'mk-colcheck';
-        titles[ref] = `${colLabel(col)} · ${p.sex === 'M' ? 'male learners' : p.sex === 'F' ? 'female learners' : 'learners'}`;
-      }
-    }
-    for (const s of m.summaries) for (let r = s.rows[0]; r <= s.rows[1]; r++) {
-      marks[XL.makeRef(r, s.labelCol)] = 'mk-col'; titles[XL.makeRef(r, s.labelCol)] = s.groupBy === 'section' ? 'Section name' : 'Grade level';
-      for (const col of s.columns) { const ref = XL.makeRef(r, col.col); if (!sheet.cells.get(ref)?.formula) { marks[ref] = 'mk-col'; titles[ref] = `Count: ${METRICS.find(x => x[0] === col.metric)?.[1] || col.metric} · ${col.sex}`; } }
-    }
-    if (ui.sel) marks[ui.sel] = (marks[ui.sel] || '') + ' mk-sel';
-
-    const sheetTabs = t.sheets.map((s, i) => `<option value="${i}"${i === ui.sheetIdx ? ' selected' : ''}>${esc(s.sheetName)} — ${KIND_LABEL[s.kind]}</option>`).join('');
-    const fieldsHtml = m.fields.length ? m.fields.map(f => `
-      <div class="map-item" data-ref="${f.ref}">
-        <span class="dot ${confClass(f.conf)}" title="${f.conf >= 0.8 ? 'Sure' : 'Please check'}"></span>
-        <span class="mono">${f.ref}</span>
-        <select data-field="${f.id}" aria-label="What goes in ${f.ref}">${options(FIELD_KEYS.map(k => [k, L(k)]), f.key)}</select>
-        <button class="x" type="button" data-act="del-field" data-id="${f.id}" title="Remove">✕</button>
-      </div>`).join('') : '<p class="muted">None found.</p>';
-    const listsHtml = m.lists.map((l, li) => `
-      <div class="panel stack">
-        <h3>Learner table ${m.lists.length > 1 ? li + 1 : ''}</h3>
-        ${l.parts.map((p, pi) => `<div class="row" style="gap:6px">
-          <span class="muted" style="width:52px">Rows</span>
-          <input type="number" style="width:72px" id="p-${li}-${pi}-f" data-part="${li}:${pi}:first" value="${p.first}"> –
-          <input type="number" style="width:72px" id="p-${li}-${pi}-l" data-part="${li}:${pi}:last" value="${p.last}">
-          <select data-part="${li}:${pi}:sex" id="p-${li}-${pi}-s">${options([['', 'All learners'], ['M', 'Male only'], ['F', 'Female only']], p.sex || '')}</select>
-        </div>`).join('')}
-        <div class="map-list">${l.columns.map((col, ci) => `
-          <div class="map-item" data-col="${col.col}">
-            <span class="dot ${confClass(col.conf)}"></span>
-            <span class="mono">${XL.numToCol(col.col)}</span>
-            <select data-lcol="${li}:${ci}" aria-label="Column ${XL.numToCol(col.col)}">${options(COL_KEYS.map(k => [k, L(k)]), col.key)}</select>
-            <button class="x" type="button" data-act="del-lcol" data-li="${li}" data-ci="${ci}" title="Remove">✕</button>
-          </div>
-          ${col.choice || col.flag || col.key === 'a.level' || col.key === 'learner.sex' ? `<div class="row" style="gap:6px;padding:0 4px 6px 64px;font-size:.82rem">
-            ${col.key === 'a.level' || col.key === 'learner.sex' ? `<select data-lchoice="${li}:${ci}">${options((col.key === 'a.level' ? [['', 'Write the level'], ...LEVELS.map(x => [x, 'Mark if ' + x])] : [['', 'Write M/F'], ['M', 'Mark if male'], ['F', 'Mark if female']]), col.choice || '')}</select>` : ''}
-            ${col.choice || col.flag ? `<span class="muted">mark</span><input type="text" style="width:44px" data-lmark="${li}:${ci}" value="${esc(col.mark ?? state.settings.defaultMark)}">` : ''}
-          </div>` : ''}`).join('')}
-          ${(l.unknownColumns || []).map(u => `<div class="map-item"><span class="dot bad"></span><span class="mono">${XL.numToCol(u.col)}</span><span class="muted" title="${esc(u.label)}">Not recognised</span><button class="btn small quiet" type="button" data-act="add-lcol" data-li="${li}" data-col="${u.col}">Assign</button></div>`).join('')}
-        </div>
-      </div>`).join('');
-    const sumHtml = m.summaries.map((s, si) => `
-      <div class="panel stack">
-        <h3>Count table · one row per ${s.groupBy === 'section' ? 'section' : 'grade level'}</h3>
-        <div class="row" style="gap:6px"><span class="muted">Rows</span>
-          <input type="number" style="width:72px" data-srow="${si}:0" value="${s.rows[0]}"> – <input type="number" style="width:72px" data-srow="${si}:1" value="${s.rows[1]}">
-          <select data-sgroup="${si}">${options([['section', 'Sections of one grade'], ['grade', 'Grade levels']], s.groupBy)}</select>
-        </div>
-        <p class="muted">${s.columns.length} count columns found${(s.unknownColumns || []).length ? `, ${s.unknownColumns.length} not recognised` : ''}. Columns that already hold formulas (totals) are left alone.</p>
-        <details><summary>Show columns</summary><div class="map-list">${s.columns.map((col, ci) => `
-          <div class="map-item"><span class="dot ok"></span><span class="mono">${XL.numToCol(col.col)}</span>
-            <select data-scol="${si}:${ci}">${options(METRICS, col.metric)}</select><span class="chip">${col.sex}</span></div>`).join('')}</div></details>
-      </div>`).join('');
-
-    const selCell = ui.sel ? (() => {
-      const p = XL.parseRef(ui.sel);
-      const txt = XL.cellText(sheet, p.r, p.c);
-      const blanks = (txt.match(/_{3,}/g) || []).length;
-      const existing = m.fields.filter(f => f.ref === ui.sel);
-      return `<div class="panel stack">
-        <h3>Cell ${ui.sel}</h3>
-        <p>${txt ? `“${esc(txt.length > 120 ? txt.slice(0, 120) + '…' : txt)}”` : '<span class="muted">Empty cell</span>'}</p>
-        ${existing.length ? `<p class="muted">Already filled with: ${existing.map(f => esc(L(f.key))).join(', ')}</p>` : ''}
-        <label class="field"><span>Put this here</span><select id="sel-key">${options(FIELD_KEYS.map(k => [k, L(k)]))}</select></label>
-        <label class="field"><span>How</span><select id="sel-mode">${options([
-          ['value', txt ? 'Replace the whole cell' : 'Write into the cell'],
-          ...Array.from({ length: blanks }, (_, i) => ['blank:' + i, `Fill blank ${i + 1} (____)`]),
-          ...(txt ? [['find', 'Replace one word or number in the text']] : []),
-        ], blanks ? 'blank:0' : 'value')}</select></label>
-        <label class="field" id="find-wrap" hidden><span>Word to replace</span><input type="text" id="sel-find" placeholder="e.g. 2025-2026"></label>
-        <div class="row"><button class="btn primary small" type="button" data-act="add-field">Add</button><button class="btn small quiet" type="button" data-act="clear-sel">Cancel</button></div>
-      </div>`;
-    })() : '<div class="panel muted" style="font-size:.88rem">Click any cell on the form to tell the app what goes there.</div>';
-
-    $('#view').innerHTML = `
-      <div class="head">
-        <div><button class="btn quiet small" type="button" data-act="close-tpl">‹ All templates</button><h1>${esc(t.name)}</h1></div>
-        <div class="row">
-          <select id="sheet-pick" aria-label="Sheet">${sheetTabs}</select>
-          <select id="kind-pick" aria-label="Form type">${options(Object.entries(KIND_LABEL), m.kind)}</select>
-          <select id="lang-pick" aria-label="Language">${options([['', 'Language: choose when printing'], ['Filipino', 'Filipino'], ['English', 'English']], m.language || '')}</select>
-          <button class="btn small" type="button" data-act="redetect">Read again</button>
-          <button class="btn small ${m.checked ? '' : 'primary'}" type="button" data-act="mark-checked">${m.checked ? 'Checked ✓' : 'Mark as checked'}</button>
-        </div>
-      </div>
-      <div class="legend">
-        <span><i class="sw" style="background:rgba(45,122,76,.45)"></i>Found, sure</span>
-        <span><i class="sw" style="background:rgba(214,150,30,.55)"></i>Found, please check</span>
-        <span><i class="sw" style="background:rgba(45,122,76,.14)"></i>Learner / count rows</span>
-        <span><i class="sw" style="background:rgba(29,107,87,.16)"></i>Table heading</span>
-        <span>Hover a cell to see what goes there.</span>
-      </div>
-      <div class="mapper">
-        <div class="sheet-view" id="sheet-view"><div class="paper" style="zoom:${ui.zoom}">${XL.renderSheet(sheet, { marks, titles })}</div></div>
-        <div class="side">
-          ${selCell}
-          <div class="panel stack"><h3>Single values</h3><div class="map-list">${fieldsHtml}</div></div>
-          ${listsHtml}${sumHtml}
-          <div class="row"><span class="muted">Zoom</span>${seg('zoom', ['0.6', '0.8', '1'], String(ui.zoom), { '0.6': '60%', '0.8': '80%', '1': '100%' })}</div>
-        </div>
-      </div>`;
-    const mode = $('#sel-mode');
-    if (mode) mode.addEventListener('change', () => { $('#find-wrap').hidden = mode.value !== 'find'; });
-  }
-
-  function currentMapping() {
-    const t = state.templates.find(x => x.id === ui.tplId);
-    return t ? t.sheets[ui.sheetIdx] : null;
-  }
-
-  // ================= Print forms =================
-  function printableSheets() {
-    const out = [];
-    for (const t of state.templates) t.sheets.forEach((m, i) => { if (m.kind !== 'none') out.push({ t, m, i, key: t.id + ':' + i }); });
-    return out;
-  }
-  function viewPrint() {
-    const forms = printableSheets();
-    if (!forms.length) return `<div class="head"><div><h1>Print forms</h1></div></div><div class="panel empty">Import a template first under <b>Templates</b>.</div>`;
-    const p = ui.print;
-    if (!forms.find(f => f.key === p.form)) p.form = forms[0].key;
-    const f = forms.find(x => x.key === p.form);
-    const kind = f.m.kind;
-    const list = syClasses();
-    if (!p.classId || !list.find(c => c.id === p.classId)) p.classId = ui.classId || (list[0] && list[0].id);
-    const grades = [...new Set(list.map(c => String(c.grade)))].sort((a, b) => a - b);
-    if (!p.grade || !grades.includes(p.grade)) p.grade = (list.find(c => c.id === p.classId) || {}).grade || grades[0];
-    p.period = p.period || ui.period;
-    p.lang = f.m.language || p.lang || ui.lang;
-    if (p.fit === undefined) p.fit = true;
-    const wide = kind === 'grade' || kind === 'school';
-    if (p.orient === undefined || p.lastForm !== p.form) { p.orient = wide ? 'landscape' : ''; p.lastForm = p.form; }
-    const groups = {};
-    for (const x of forms) (groups[x.t.name] = groups[x.t.name] || []).push(x);
-    const formSelect = Object.entries(groups).map(([n, xs]) => `<optgroup label="${esc(n)}">${xs.map(x => `<option value="${x.key}"${x.key === p.form ? ' selected' : ''}>${esc(x.m.sheetName)} (${KIND_LABEL[x.m.kind]})</option>`).join('')}</optgroup>`).join('');
-    const ctx = kind === 'class' || kind === 'learner'
-      ? `<label class="field"><span>Class</span><select id="pr-class">${options(list.map(c => [c.id, className(c)]), p.classId)}</select></label>`
-      : kind === 'grade' ? `<label class="field"><span>Grade</span><select id="pr-grade">${options(grades.map(g => [g, 'Grade ' + g]), p.grade)}</select></label>`
-        : `<div class="field"><span style="font-weight:600;font-size:.85rem;color:var(--muted)">Covers</span><span>All classes in ${esc(state.sy)}</span></div>`;
-    return `
-      <div class="head">
-        <div><h1>Print forms</h1><p>The app fills your data into the original template and saves it as an Excel file. Open it in Excel and print. It looks exactly like the DepEd form because it <i>is</i> the DepEd form.</p></div>
-      </div>
-      <div class="panel stack">
-        <div class="grid2">
-          <label class="field"><span>Form</span><select id="pr-form">${formSelect}</select></label>
-          ${ctx}
-          <div class="field"><span style="font-weight:600;font-size:.85rem;color:var(--muted)">Period</span>${seg('pr-period', PERIODS, p.period, PERIOD_LABEL)}</div>
-          <div class="field"><span style="font-weight:600;font-size:.85rem;color:var(--muted)">Language${f.m.language ? ' (set by the form)' : ''}</span>${f.m.language ? `<span class="chip ok">${f.m.language}</span>` : seg('pr-lang', LANGS, p.lang)}</div>
-        </div>
-        <details>
-          <summary>Page setup</summary>
-          <div class="grid2" style="margin-top:10px">
-            <label class="row" style="gap:6px"><input type="checkbox" id="pr-fit" ${p.fit ? 'checked' : ''}> Fit the form to the page width</label>
-            <label class="field"><span>Orientation</span><select id="pr-orient">${options([['', 'As in template'], ['portrait', 'Portrait'], ['landscape', 'Landscape']], p.orient)}</select></label>
-            <label class="field"><span>Paper</span><select id="pr-paper">${options(PAPER, p.paper || '')}</select></label>
-            <label class="row" style="gap:6px"><input type="checkbox" id="pr-only" ${p.keepAll ? '' : 'checked'}> Show only this form’s sheet in the saved file</label>
-          </div>
-        </details>
-      </div>
-      <div id="pr-warn"></div>
-      <div class="row">
-        <button class="btn primary" type="button" data-act="save-form">Save filled Excel file</button>
-        ${isDesktop ? '<button class="btn" type="button" data-act="open-form">Open in Excel to print</button>' : ''}
-        <span class="muted" id="pr-pages"></span>
-      </div>
-      <div class="preview-wrap" id="preview"><div class="empty">Preparing preview…</div></div>`;
-  }
-
-  function printContext() {
-    const forms = printableSheets();
-    const f = forms.find(x => x.key === ui.print.form);
-    if (!f) return null;
-    const p = ui.print;
+  // ---------- building the filled file ----------
+  function fillContext(f) {
     return {
-      f, ctx: {
-        kind: f.m.kind, classId: p.classId, grade: p.grade, period: p.period,
-        lang: f.m.language || p.lang, date: new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }),
-      },
+      kind: f.m.kind, classId: ui.classId, grade: ui.grade, period: ui.period, lang: formLang(f),
+      date: (state.dates || {})[`${ui.classId}:${ui.period}`] || todayText(),
     };
   }
-
   async function buildFiles() {
-    const pc = printContext();
-    if (!pc) return null;
-    const { f, ctx } = pc;
+    const f = currentForm();
+    if (!f) return null;
+    const ctx = fillContext(f);
     const data = await tplData(f.t.id);
-    if (!data) throw new Error('The template file is missing. Import it again.');
+    if (!data) throw new Error('The form file is missing on this computer. Upload it again under My forms.');
     const sheet = data.wb.sheets.find(s => s.path === f.m.sheetPath);
-    const p = ui.print;
-    const page = { fit: p.fit, orientation: p.orient || null, paper: p.paper ? +p.paper : null };
-    const opts = { onlySheet: p.keepAll ? null : f.m.sheetPath, pageSheet: f.m.sheetPath, page, type: 'uint8array' };
-    const files = [];
-    const warnings = [];
+    const kind = f.m.kind;
+    const page = { fit: ui.page.fit !== false, orientation: (ui.page.orient ?? ((kind === 'grade' || kind === 'school') ? 'landscape' : '')) || null, paper: ui.page.paper ? +ui.page.paper : null };
+    const opts = { onlySheet: f.m.sheetPath, pageSheet: f.m.sheetPath, page, type: 'uint8array' };
+    const files = [], warnings = [];
     const cls = state.classes.find(c => c.id === ctx.classId);
-    const base = [f.m.sheetName, ctx.kind === 'grade' ? 'Grade ' + ctx.grade : ctx.kind === 'school' ? state.sy : className(cls), ctx.period].join(' - ').replace(/[\\/:*?"<>|]+/g, ' ');
-    if (ctx.kind === 'learner') {
+    const who = kind === 'grade' ? 'Grade ' + ctx.grade : kind === 'school' ? state.sy : className(cls);
+    const base = [f.m.sheetName, who, ctx.period].join(' - ');
+    if (kind === 'learner') {
       const learners = Data.sortLearners(cls ? cls.learners : []);
       for (const l of learners) {
         const r = Data.buildWrites(f.m, sheet, state, Object.assign({}, ctx, { learner: l }));
         const out = await XL.fillWorkbook(data.buf.slice(0), { [f.m.sheetPath]: r.pages[0] }, opts);
-        files.push({ name: `${Data.fullName(l, state.settings)} - ${ctx.period}.xlsx`.replace(/[\\/:*?"<>|]+/g, ' '), data: out.data, writes: r.pages[0] });
+        files.push({ name: `${Data.fullName(l, state.settings)} - ${ctx.period}.xlsx`, data: out.data, writes: r.pages[0] });
       }
-      if (!learners.length) warnings.push('This class has no learners.');
+      if (!learners.length) warnings.push('This class has no learners yet.');
     } else {
       const r = Data.buildWrites(f.m, sheet, state, ctx);
       warnings.push(...r.warnings);
@@ -2440,8 +2571,8 @@ window.SAMPLE_TEMPLATES = {
         files.push({ name: `${base}${r.pages.length > 1 ? ` (page ${i + 1})` : ''}.xlsx`, data: out.data, writes: r.pages[i] });
       }
     }
-    const missing = Data.missingResults(state, ctx);
-    return { f, ctx, files, warnings, missing, sheet };
+    const missing = kind === 'class' ? Data.missingResults(state, ctx, f.m) : [];
+    return { f, ctx, files, warnings, missing };
   }
 
   // shrink a wide form so the whole width is visible
@@ -2456,23 +2587,20 @@ window.SAMPLE_TEMPLATES = {
   async function refreshPreview() {
     const seq = ++previewSeq;
     const box = $('#preview');
-    if (!box) return;
+    if (!box || box.hidden) return;
     try {
       const res = await buildFiles();
       if (seq !== previewSeq || !res) return;
       const warn = [...res.warnings];
-      if (res.missing.length) warn.unshift(`${res.missing.length} learner(s) have no reading level for ${res.ctx.period} ${res.ctx.lang}: ${res.missing.slice(0, 5).map(l => Data.fullName(l, state.settings)).join('; ')}${res.missing.length > 5 ? '…' : ''}`);
-      const unchecked = !res.f.m.checked ? '<li>This form has not been marked as checked yet. Open it under Templates and confirm the highlighted cells.</li>' : '';
-      $('#pr-warn').innerHTML = warn.length || unchecked ? `<div class="notice"><b>Before you print</b><ul>${unchecked}${warn.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>` : '';
-      $('#pr-pages').textContent = res.files.length > 1 ? `${res.files.length} files will be saved${res.ctx.kind === 'learner' ? ' (one per learner, in a .zip)' : ''}.` : '';
-      if (!res.files.length) { box.innerHTML = '<div class="empty">Nothing to preview.</div>'; return; }
+      if (res.missing.length) warn.unshift(`${res.missing.length} learner(s) have no reading level yet: ${res.missing.slice(0, 5).map(l => Data.fullName(l, state.settings)).join('; ')}${res.missing.length > 5 ? '…' : ''}`);
+      $('#pr-warn').innerHTML = warn.length ? `<div class="notice"><b>Check before printing</b><ul>${warn.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>` : '';
+      $('#save-note').textContent = res.files.length > 1 ? `${res.files.length} files will be saved${res.ctx.kind === 'learner' ? ' (in a .zip)' : ''}.` : '';
+      if (!res.files.length) { box.innerHTML = '<div class="empty">Nothing to show yet.</div>'; return; }
       const wb = await XL.loadWorkbook(res.files[0].data.slice(0));
       if (seq !== previewSeq) return;
       const sheet = wb.sheets.find(s => s.path === res.f.m.sheetPath);
       XL.computeFormulas(sheet);
-      const marks = {};
-      for (const w of res.files[0].writes) marks[w.ref] = 'mk-fill';
-      box.innerHTML = `<div class="paper">${XL.renderSheet(sheet, { marks })}</div>`;
+      box.innerHTML = `<div class="paper">${XL.renderSheet(sheet)}</div>`;
       fitZoom(box);
     } catch (e) {
       if (seq === previewSeq) box.innerHTML = `<div class="notice bad">${esc(e.message || e)}</div>`;
@@ -2484,20 +2612,20 @@ window.SAMPLE_TEMPLATES = {
     btns.forEach(b => { b.disabled = true; });
     try {
       const res = await buildFiles();
-      if (!res || !res.files.length) { toast('Nothing to save.'); return; }
+      if (!res || !res.files.length) { toast('Nothing to save yet.'); return; }
       let blob, name;
       if (res.files.length === 1) {
         blob = new Blob([res.files[0].data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         name = res.files[0].name;
       } else {
         const zip = new JSZip();
-        for (const f of res.files) zip.file(f.name, f.data);
+        for (const f of res.files) zip.file(f.name.replace(/[\\/:*?"<>|]+/g, ' '), f.data);
         blob = await zip.generateAsync({ type: 'blob' });
         name = res.files[0].name.replace(/( \(page 1\))?\.xlsx$/, '') + '.zip';
         if (res.ctx.kind === 'learner') name = `${res.f.m.sheetName} - ${className(state.classes.find(c => c.id === res.ctx.classId))} - ${res.ctx.period}.zip`;
       }
       if (openAfter && window.desktop) {
-        const path = await window.desktop.openInExcel(name, new Uint8Array(await blob.arrayBuffer()));
+        const path = await window.desktop.openInExcel(name.replace(/[–—]/g, '-'), new Uint8Array(await blob.arrayBuffer()));
         toast(path ? 'Opened in Excel. Press Ctrl+P there to print.' : 'Could not open the file.');
         return;
       }
@@ -2508,55 +2636,219 @@ window.SAMPLE_TEMPLATES = {
     } finally { btns.forEach(b => { b.disabled = false; }); }
   }
 
+  // ================= My forms (templates) =================
+  function viewTemplates() {
+    const cards = state.templates.map(t => {
+      const sheets = t.sheets.map((m, i) => `<div class="sheet-row">
+          <span><b>${esc(m.sheetName)}</b>${m.hidden ? ' <span class="muted">(hidden sheet)</span>' : ''}</span>
+          <span class="chip">${KIND_LABEL[m.kind]}${m.language ? ' · ' + m.language : ''}</span>
+          ${m.kind !== 'none' ? `<button class="btn small primary" type="button" data-act="fill-sheet" data-tpl="${t.id}" data-i="${i}">Fill in</button>` : '<span></span>'}
+          <button class="btn small quiet" type="button" data-act="open-sheet" data-tpl="${t.id}" data-i="${i}">Adjust</button>
+        </div>`).join('');
+      return `<div class="panel tpl-card">
+        <div class="tpl-top">
+          <div><h2>${esc(t.name)}</h2><p class="muted">${esc(t.fileName)} · uploaded ${new Date(t.addedAt).toLocaleDateString()}</p></div>
+          <button class="btn small quiet danger" type="button" data-act="del-tpl" data-tpl="${t.id}">Remove</button>
+        </div>
+        <div class="sheet-rows">${sheets}</div>
+      </div>`;
+    }).join('');
+    return `
+      <div class="head"><div><h1>My forms</h1><p>Upload each new DepEd form once. The app reads it and makes a table for you to fill in. <b>Adjust</b> is only needed if something lands in the wrong place.</p></div></div>
+      ${uploadBox(!state.templates.length)}
+      ${cards}`;
+  }
+
+  async function importTemplate(buf, fileName, name) {
+    let wb;
+    try { wb = await XL.loadWorkbook(buf.slice(0)); }
+    catch (e) { toast(e.message || 'This file could not be read as an Excel workbook.'); return; }
+    const id = Data.uid('t');
+    const sheets = wb.sheets.map(s => Detect.detectSheet(s));
+    // remember school details already written on the form
+    for (const m of sheets) for (const fl of m.fields) {
+      if (fl.mode !== 'after' || !fl.current || !fl.key.startsWith('school.')) continue;
+      const prop = fl.key.split('.')[1];
+      if (prop in state.school && !state.school[prop]) state.school[prop] = fl.current.trim();
+    }
+    state.templates.unshift({ id, name: name || fileName.replace(/\.xls[xm]?$/i, ''), fileName, addedAt: Date.now(), sheets });
+    await Data.kvSet('tpl:' + id, buf);
+    tplCache.set(id, { buf, wb });
+    const forms = sheets.filter(s => s.kind !== 'none');
+    if (!forms.length) { save(); toast(`No form table was found in ${fileName}. Open it under My forms › Adjust.`); ui.view = 'templates'; render(); return; }
+    const first = sheets.findIndex(s => s.kind === 'class');
+    ui.form = id + ':' + (first >= 0 ? first : sheets.indexOf(forms[0]));
+    ui.view = 'fill'; ui.tplId = null; ui.preview = false;
+    const m = sheets[first >= 0 ? first : 0];
+    if (m && m.language) ui.lang = m.language;
+    // a period already ticked on the form (e.g. "√ Pre-Test")
+    save();
+    toast(`${fileName} is ready. ${forms.length > 1 ? `${forms.length} forms found. ` : ''}Start typing below.`);
+    render();
+    window.scrollTo(0, 0);
+  }
+
+  // ---------- adjust (field mapping) ----------
+  const FIELD_KEYS = Object.keys(Detect.FIELD_LABELS).filter(k => !k.startsWith('a.') && k !== 'row.no');
+  const COL_KEYS = ['row.no', 'learner.name', 'learner.lrn', 'learner.sex', 'a.level', 'a.indepGrade', 'a.struggling', 'a.nonReader', 'a.remarks'];
+  const X_INPUTS = [['number', 'Number'], ['text', 'Text'], ['check', 'Tick box'], ['total', 'Total (adds up)'], ['formula', 'Leave to Excel']];
+  const METRICS = [['enrolled', 'Enrolment'], ['level:Independent', 'Independent'], ['level:Instructional', 'Instructional'], ['level:Frustration', 'Frustration'], ['struggling', 'Struggling readers'], ['nonReader', 'Non-readers']]
+    .concat(GRADES.map(g => ['indepAt:' + g, 'Independent at Grade ' + g]));
+  const L = k => Detect.FIELD_LABELS[k] || (k && k.startsWith('x:') ? 'Own column' : k);
+  const confClass = c => c >= 0.8 ? 'ok' : 'warn';
+
+  async function renderMapper() {
+    const t = state.templates.find(x => x.id === ui.tplId);
+    if (!t) { ui.tplId = null; render(); return; }
+    const data = await tplData(t.id);
+    if (!data) { $('#view').innerHTML = '<div class="panel empty">The form file is missing on this computer. Remove it and upload it again.</div>'; return; }
+    const m = t.sheets[ui.sheetIdx] || t.sheets[0];
+    const sheet = data.wb.sheets.find(s => s.path === m.sheetPath);
+    const marks = {}, titles = {};
+    for (const f of m.fields) { marks[f.ref] = f.conf >= 0.8 ? 'mk-sure' : 'mk-check'; titles[f.ref] = L(f.key); }
+    for (const l of m.lists) {
+      for (let r = l.headerRows[0]; r <= l.headerRows[1]; r++) for (let c = l.cols[0]; c <= l.cols[1]; c++) marks[XL.makeRef(r, c)] = marks[XL.makeRef(r, c)] || 'mk-head';
+      for (const col of l.columns) for (const p of l.parts) for (let r = p.first; r <= p.last; r++) {
+        const ref = XL.makeRef(r, col.col);
+        marks[ref] = 'mk-col';
+        titles[ref] = `${col.key.startsWith('x:') ? col.chain.join(' ') : L(col.key)}${col.choice ? ' = ' + col.choice : ''}`;
+      }
+    }
+    for (const s of m.summaries) for (let r = s.rows[0]; r <= s.rows[1]; r++) {
+      marks[XL.makeRef(r, s.labelCol)] = 'mk-col';
+      for (const col of s.columns) { const ref = XL.makeRef(r, col.col); if (!sheet.cells.get(ref)?.formula) marks[ref] = 'mk-col'; }
+    }
+    if (ui.sel) marks[ui.sel] = (marks[ui.sel] || '') + ' mk-sel';
+
+    const sheetTabs = t.sheets.map((s, i) => `<option value="${i}"${i === ui.sheetIdx ? ' selected' : ''}>${esc(s.sheetName)} — ${KIND_LABEL[s.kind]}</option>`).join('');
+    const fieldsHtml = m.fields.length ? m.fields.map(f => `
+      <div class="map-item"><span class="dot ${confClass(f.conf)}"></span><span class="mono">${f.ref}</span>
+        <select data-field="${f.id}" aria-label="What goes in ${f.ref}">${options(FIELD_KEYS.map(k => [k, L(k)]), f.key)}</select>
+        <button class="x" type="button" data-act="del-field" data-id="${f.id}" title="Remove">✕</button></div>`).join('') : '<p class="muted">None found.</p>';
+    const listsHtml = m.lists.map((l, li) => `
+      <div class="panel stack">
+        <h3>Learner table</h3>
+        ${l.parts.map((p, pi) => `<div class="row" style="gap:6px"><span class="muted" style="width:44px">Rows</span>
+          <input type="number" style="width:70px" data-part="${li}:${pi}:first" value="${p.first}"> –
+          <input type="number" style="width:70px" data-part="${li}:${pi}:last" value="${p.last}">
+          <select data-part="${li}:${pi}:sex">${options([['', 'All learners'], ['M', 'Male only'], ['F', 'Female only']], p.sex || '')}</select></div>`).join('')}
+        <div class="map-list">${l.columns.map((col, ci) => `
+          <div class="map-item"><span class="dot ${confClass(col.conf)}"></span><span class="mono">${XL.numToCol(col.col)}</span>
+            ${col.key.startsWith('x:')
+              ? `<select data-xinput="${li}:${ci}" title="${esc(col.chain.join(' '))}">${options(X_INPUTS.concat(col.input === 'cond' ? [['cond', 'Tick from total']] : []), col.input)}</select>`
+              : `<select data-lcol="${li}:${ci}">${options(COL_KEYS.map(k => [k, L(k)]), col.key)}</select>`}
+            <button class="x" type="button" data-act="del-lcol" data-li="${li}" data-ci="${ci}" title="Ignore this column">✕</button></div>
+          ${col.key.startsWith('x:') ? `<div class="muted small" style="padding:0 4px 4px 64px">${esc(col.chain.join(' › '))}</div>` : ''}
+          ${col.choice || col.flag || col.input === 'check' || col.input === 'cond' ? `<div class="row small" style="gap:6px;padding:0 4px 6px 64px">${col.choice ? esc('when ' + col.choice) + ' ·' : ''} <span class="muted">write</span><input type="text" style="width:44px" data-lmark="${li}:${ci}" value="${esc(col.mark ?? '√')}"></div>` : ''}`).join('')}
+          ${(l.unknownColumns || []).map(u => `<div class="map-item"><span class="dot bad"></span><span class="mono">${XL.numToCol(u.col)}</span><span class="muted">Ignored</span><button class="btn small quiet" type="button" data-act="add-lcol" data-li="${li}" data-col="${u.col}">Use</button></div>`).join('')}
+        </div>
+      </div>`).join('');
+    const sumHtml = m.summaries.map((s, si) => `
+      <div class="panel stack"><h3>Count table · one row per ${s.groupBy === 'section' ? 'section' : 'grade level'}</h3>
+        <div class="row" style="gap:6px"><span class="muted">Rows</span>
+          <input type="number" style="width:70px" data-srow="${si}:0" value="${s.rows[0]}"> – <input type="number" style="width:70px" data-srow="${si}:1" value="${s.rows[1]}">
+          <select data-sgroup="${si}">${options([['section', 'Sections of one grade'], ['grade', 'Grade levels']], s.groupBy)}</select></div>
+        <details><summary>${s.columns.length} count columns</summary><div class="map-list">${s.columns.map((col, ci) => `
+          <div class="map-item"><span class="dot ok"></span><span class="mono">${XL.numToCol(col.col)}</span><select data-scol="${si}:${ci}">${options(METRICS, col.metric)}</select><span class="chip">${col.sex}</span></div>`).join('')}</div></details>
+      </div>`).join('');
+    const selCell = ui.sel ? (() => {
+      const p = XL.parseRef(ui.sel);
+      const txt = XL.cellText(sheet, p.r, p.c);
+      const blanks = (txt.match(/_{3,}/g) || []).length;
+      return `<div class="panel stack"><h3>Cell ${ui.sel}</h3>
+        <p>${txt ? `“${esc(txt.length > 120 ? txt.slice(0, 120) + '…' : txt)}”` : '<span class="muted">Empty cell</span>'}</p>
+        <label class="field"><span>Put this here</span><select id="sel-key">${options(FIELD_KEYS.map(k => [k, L(k)]))}</select></label>
+        <label class="field"><span>How</span><select id="sel-mode">${options([
+          ['value', txt ? 'Replace the whole cell' : 'Write into the cell'],
+          ...(/:/.test(txt) ? [['after', 'Write after the “:”']] : []),
+          ...Array.from({ length: blanks }, (_, i) => ['blank:' + i, `Fill blank ${i + 1} (____)`]),
+          ...(txt ? [['find', 'Replace one word or number']] : []),
+        ], blanks ? 'blank:0' : /:/.test(txt) ? 'after' : 'value')}</select></label>
+        <label class="field" id="find-wrap" hidden><span>Word to replace</span><input type="text" id="sel-find" placeholder="e.g. 2025-2026"></label>
+        <div class="row"><button class="btn primary small" type="button" data-act="add-field">Add</button><button class="btn small quiet" type="button" data-act="clear-sel">Cancel</button></div></div>`;
+    })() : '<div class="panel muted small">Click a cell on the form to say what goes there.</div>';
+
+    $('#view').innerHTML = `
+      <div class="head">
+        <div><button class="btn quiet small" type="button" data-act="close-tpl">‹ My forms</button><h1>Adjust: ${esc(m.sheetName)}</h1></div>
+        <div class="row">
+          <select id="sheet-pick" aria-label="Sheet">${sheetTabs}</select>
+          <select id="kind-pick" aria-label="Form type">${options(Object.entries(KIND_LABEL), m.kind)}</select>
+          <select id="lang-pick" aria-label="Language">${options([['', 'Language: choose when filling'], ['Filipino', 'Filipino'], ['English', 'English']], m.language || '')}</select>
+          <button class="btn small" type="button" data-act="redetect">Read again</button>
+          <button class="btn small primary" type="button" data-act="fill-sheet" data-tpl="${t.id}" data-i="${ui.sheetIdx}">Done, fill in</button>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i class="sw" style="background:rgba(45,122,76,.45)"></i>Found</span>
+        <span><i class="sw" style="background:rgba(214,150,30,.55)"></i>Not sure</span>
+        <span><i class="sw" style="background:rgba(45,122,76,.14)"></i>Learner rows</span>
+        <span>Hover a cell to see what goes there.</span>
+      </div>
+      <div class="mapper">
+        <div class="sheet-view" id="sheet-view"><div class="paper" style="zoom:${ui.zoom}">${XL.renderSheet(sheet, { marks, titles })}</div></div>
+        <div class="side">${selCell}
+          <div class="panel stack"><h3>Top of the form</h3><div class="map-list">${fieldsHtml}</div></div>
+          ${listsHtml}${sumHtml}
+          <div class="row"><span class="muted">Zoom</span>${seg('zoom', ['0.6', '0.8', '1'], String(ui.zoom), { '0.6': '60%', '0.8': '80%', '1': '100%' })}</div>
+        </div>
+      </div>`;
+    const mode = $('#sel-mode');
+    if (mode) mode.addEventListener('change', () => { $('#find-wrap').hidden = mode.value !== 'find'; });
+  }
+  function currentMapping() {
+    const t = state.templates.find(x => x.id === ui.tplId);
+    return t ? t.sheets[ui.sheetIdx] : null;
+  }
+
+  // ================= Classes =================
+  function viewClasses() {
+    const list = syClasses();
+    const rows = list.map(c => `
+      <tr data-cid="${c.id}">
+        <td style="width:130px"><select id="cg-${c.id}" data-cf="grade">${options([['', '–']].concat(GRADES.map(g => [g, 'Grade ' + g])), c.grade)}</select></td>
+        <td><input type="text" id="cs-${c.id}" data-cf="section" value="${esc(c.section)}" placeholder="Section"></td>
+        <td><input type="text" id="ca-${c.id}" data-cf="adviser" value="${esc(c.adviser)}" placeholder="Teacher"></td>
+        <td class="num">${c.learners.length} learners</td>
+        <td><button class="btn small quiet danger" type="button" data-act="del-class">Delete</button></td>
+      </tr>`).join('');
+    return `
+      <div class="head">
+        <div><h1>Classes</h1><p>Each class keeps its learners for the whole school year, so you type names only once for BOSY, MOSY and EOSY and for every form.</p></div>
+        <label class="field"><span>School year</span><input type="text" id="sy-input" value="${esc(state.sy)}" style="width:130px"></label>
+      </div>
+      <div class="panel flush"><div class="table-wrap"><table class="grid">
+        <thead><tr><th>Grade</th><th>Section</th><th>Teacher</th><th>Learners</th><th></th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="5" class="empty">No classes yet. A class is created for you when you start filling in a form.</td></tr>'}</tbody>
+      </table></div></div>
+      <div class="row"><button class="btn" type="button" data-act="add-class">Add class</button></div>`;
+  }
+
   // ================= Settings =================
   function viewSettings() {
     const s = state.school, st = state.settings;
     const inp = (id, label, val, extra = '') => `<label class="field"><span>${label}</span><input type="text" id="${id}" value="${esc(val)}" ${extra}></label>`;
     return `
-      <div class="head"><div><h1>School &amp; settings</h1><p>These details fill the header and signature lines of every form.</p></div></div>
-      <div class="panel stack">
-        <h2>School</h2>
-        <div class="grid2">
-          ${inp('s-name', 'School name', s.name, 'data-s="name"')}
-          ${inp('s-id', 'School ID', s.id, 'data-s="id"')}
-          ${inp('s-district', 'District', s.district, 'data-s="district"')}
-          ${inp('s-division', 'Division', s.division, 'data-s="division"')}
-          ${inp('s-region', 'Region', s.region, 'data-s="region"')}
-          ${inp('s-head', 'School head', s.head, 'data-s="head"')}
-          ${inp('s-chair', 'Grade level chairperson', s.chair, 'data-s="chair"')}
-          ${inp('s-coord', 'Reading coordinator', s.coordinator, 'data-s="coordinator"')}
-        </div>
-      </div>
-      <div class="panel stack">
-        <h2>How things are written on the forms</h2>
-        <div class="grid2">
-          <label class="field"><span>Name format</span><select id="set-order">${options([['last', 'DELA CRUZ, Juan P.'], ['first', 'Juan P. Dela Cruz']], st.nameOrder)}</select></label>
-          <label class="row" style="gap:6px;align-self:end"><input type="checkbox" id="set-upper" ${st.upperNames ? 'checked' : ''}> Names in capital letters</label>
-          <label class="field"><span>Mark for tick-box columns</span><input type="text" id="set-mark" value="${esc(st.defaultMark)}" style="width:80px"></label>
-          ${PERIODS.map(k => inp('pn-' + k, `${k} is written as`, st.periodNames[k], `data-pn="${k}"`)).join('')}
-        </div>
-        <p class="muted">The period name replaces the word in the form title, for example “(MIDYEAR)”.</p>
-      </div>
-      <div class="panel stack">
-        <h2>Scoring helper cut-offs</h2>
-        <p class="muted">Used only to suggest a level from oral reading scores. Check them against the Phil-IRI manual your division uses.</p>
-        <div class="grid2">
-          <label class="field"><span>Word reading: Independent from (%)</span><input type="number" id="r-wi" data-rule="word.indep" value="${st.rules.word.indep}"></label>
-          <label class="field"><span>Word reading: Instructional from (%)</span><input type="number" id="r-wn" data-rule="word.inst" value="${st.rules.word.inst}"></label>
-          <label class="field"><span>Comprehension: Independent from (%)</span><input type="number" id="r-ci" data-rule="comp.indep" value="${st.rules.comp.indep}"></label>
-          <label class="field"><span>Comprehension: Instructional from (%)</span><input type="number" id="r-cn" data-rule="comp.inst" value="${st.rules.comp.inst}"></label>
-          <label class="field"><span>Overall level</span><select id="set-combine">${options([['lower', 'The lower of the two'], ['comp', 'Comprehension level'], ['word', 'Word reading level']], st.combine)}</select></label>
-        </div>
-      </div>
-      <div class="panel stack">
-        <h2>Backup</h2>
-        <p class="muted">${isDesktop ? 'Your data is saved on this computer automatically.' : 'In this test version your data is kept in this browser only.'} Save a backup file regularly (for example to a USB drive). A backup includes your templates.</p>
+      <div class="head"><div><h1>Settings</h1><p>School details fill the top and signature lines of every form.</p></div></div>
+      <div class="panel stack"><h2>School</h2><div class="grid2">
+        ${inp('s-name', 'School name', s.name, 'data-s="name"')}${inp('s-id', 'School ID', s.id, 'data-s="id"')}
+        ${inp('s-district', 'District', s.district, 'data-s="district"')}${inp('s-division', 'Division', s.division, 'data-s="division"')}
+        ${inp('s-region', 'Region', s.region, 'data-s="region"')}${inp('s-head', 'School head', s.head, 'data-s="head"')}
+        ${inp('s-chair', 'Grade level chairperson', s.chair, 'data-s="chair"')}${inp('s-coord', 'Reading coordinator', s.coordinator, 'data-s="coordinator"')}
+      </div></div>
+      <div class="panel stack"><h2>How things are written on the forms</h2><div class="grid2">
+        <label class="field"><span>Name format</span><select id="set-order">${options([['last', 'DELA CRUZ, Juan P.'], ['first', 'Juan P. Dela Cruz']], st.nameOrder)}</select></label>
+        <label class="row" style="gap:6px;align-self:end"><input type="checkbox" id="set-upper" ${st.upperNames ? 'checked' : ''}> Names in capital letters</label>
+        ${PERIODS.map(k => inp('pn-' + k, `${k} is written as`, st.periodNames[k], `data-pn="${k}"`)).join('')}
+      </div><p class="muted small">The period name replaces the word in a form title, for example “(MIDYEAR)”.</p></div>
+      <div class="panel stack"><h2>Backup</h2>
+        <p class="muted">${isDesktop ? 'Your work is saved on this computer automatically.' : 'In this test version your work is kept in this browser only.'} Save a backup file now and then, for example to a USB drive. It includes your forms.</p>
         <div class="row">
           <button class="btn" type="button" data-act="backup">Save backup file</button>
           <span class="btn file-btn">Restore from backup…<input type="file" id="restore-file" accept=".json,application/json"></span>
           <span class="btn file-btn">Add a colleague’s classes…<input type="file" id="merge-file" accept=".json,application/json"></span>
         </div>
-        <p class="muted">“Add a colleague’s classes” brings in other teachers’ classes and results from their backup file, so a grade level chairperson or coordinator can print the summaries.</p>
+        <p class="muted small">“Add a colleague’s classes” reads another teacher’s backup file, so a grade level chairperson or coordinator can print the summaries.</p>
         <div class="row"><button class="btn danger" type="button" data-act="reset-all">Erase everything</button></div>
       </div>`;
   }
@@ -2569,31 +2861,39 @@ window.SAMPLE_TEMPLATES = {
     }
     return JSON.stringify({ app: 'phil-iri-recorder', savedAt: new Date().toISOString(), state, templates: tpls });
   }
-  function b64ToBuf(b64) { const bin = atob(b64); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u.buffer; }
 
   // ================= events =================
   document.addEventListener('click', async (e) => {
     const nav = e.target.closest('.nav-item');
-    if (nav) { ui.view = nav.dataset.view; if (ui.view !== 'templates') { ui.tplId = null; ui.sel = null; } render(); save(); window.scrollTo(0, 0); return; }
+    if (nav) { ui.view = nav.dataset.view; ui.tplId = null; ui.sel = null; render(); save(); window.scrollTo(0, 0); return; }
 
     const segBtn = e.target.closest('.seg button');
     if (segBtn) {
       const name = segBtn.parentElement.dataset.seg, v = segBtn.dataset.v;
-      if (name === 'period') { ui.period = v; render(); }
-      else if (name === 'lang') { ui.lang = v; render(); }
-      else if (name === 'pr-period') { ui.print.period = v; render(); }
-      else if (name === 'pr-lang') { ui.print.lang = v; render(); }
-      else if (name === 'zoom') { ui.zoom = +v; renderMapper(); }
-      save();
+      if (name === 'period') ui.period = v;
+      else if (name === 'lang') ui.lang = v;
+      else if (name === 'zoom') { ui.zoom = +v; renderMapper(); return; }
+      save(); render();
       return;
     }
 
-    const lvlBtn = e.target.closest('.lvl button');
-    if (lvlBtn) {
-      const lid = lvlBtn.closest('tr').dataset.lid;
-      const cur = Data.result(state, lid, ui.period, ui.lang).level;
-      Data.setResult(state, lid, ui.period, ui.lang, { level: cur === lvlBtn.dataset.level ? '' : lvlBtn.dataset.level });
-      save(); render();
+    const mark = e.target.closest('button.mark');
+    if (mark) {
+      const f = currentForm();
+      const tr = mark.closest('tr');
+      const l = findLearner(tr.dataset.lid);
+      const cols = f.m.lists[+mark.dataset.li].columns.slice().sort((a, b) => a.col - b.col);
+      const c = cols[+mark.dataset.ci];
+      const on = mark.getAttribute('aria-pressed') !== 'true';
+      setGridValue(l, c, on, formLang(f));
+      // the other level columns in this row switch off
+      for (const b of tr.querySelectorAll('button.mark')) {
+        const cc = cols[+b.dataset.ci];
+        if (cc.key !== c.key) continue;
+        const pressed = cc.key === 'a.level' ? on && cc.choice === c.choice : (l.sex === cc.choice);
+        b.setAttribute('aria-pressed', pressed); b.textContent = pressed ? '●' : '';
+      }
+      if (ui.preview) refreshPreview();
       return;
     }
 
@@ -2603,59 +2903,52 @@ window.SAMPLE_TEMPLATES = {
     const b = e.target.closest('[data-act]');
     if (!b) return;
     const act = b.dataset.act;
-    const c = currentClass();
 
-    if (act === 'clear-sample') {
-      if (!armed(b, 'Click again to clear')) return;
-      state.classes = []; state.results = {}; state.sample = false;
-      state.school = Data.emptyState().school;
-      ui.classId = null; save(); render(); toast('Sample data cleared. Add your first class.');
-    } else if (act === 'pick-class') { ui.classId = b.dataset.id; save(); render(); }
-    else if (act === 'add-class') {
-      const nc = { id: Data.uid('c'), sy: state.sy, grade: c ? c.grade : '7', section: '', adviser: c ? c.adviser : '', designation: c ? c.designation : '', learners: [] };
-      state.classes.push(nc); ui.classId = nc.id; save(); render();
-      const s = $('#c-section'); if (s) s.focus();
-    } else if (act === 'del-class') {
-      if (!armed(b, 'Click again to delete')) return;
-      for (const l of c.learners) delete state.results[l.id];
-      state.classes = state.classes.filter(x => x !== c); ui.classId = null; save(); render(); toast('Class deleted.');
-    } else if (act === 'add-learner') {
-      const l = { id: Data.uid('l'), lrn: '', last: '', first: '', middle: '', ext: '', sex: '' };
-      c.learners.push(l); save(); render();
-      const inp = $(`#last-${l.id}`); if (inp) inp.focus();
-    } else if (act === 'del-learner') {
-      const lid = b.closest('tr').dataset.lid;
-      c.learners = c.learners.filter(l => l.id !== lid); delete state.results[lid]; save(); render();
-    } else if (act === 'paste-learners') {
-      const rows = parseLearnerRows($('#paste-box').value);
-      if (!rows.length) { $('#paste-hint').textContent = 'No names found. Check that each learner is on its own line.'; return; }
-      c.learners.push(...rows); save(); render(); toast(`Added ${rows.length} learner${rows.length === 1 ? '' : 's'}.`);
-    } else if (act === 'use-suggest') {
-      const lid = b.closest('tr').dataset.lid;
-      Data.setResult(state, lid, ui.period, ui.lang, { level: b.dataset.level }); save(); render();
-    } else if (act === 'load-sample-tpl') {
+    if (act === 'load-sample-tpl') {
       const s = window.SAMPLE_TEMPLATES[b.dataset.k];
-      await importTemplate(b64ToBuf(s.data), s.file, s.name, true);
+      await importTemplate(b64ToBuf(s.data), s.file, s.name);
+    } else if (act === 'import-found') {
+      const f = currentForm();
+      const cls = currentClass(true);
+      const list = f.m.lists[+b.dataset.li];
+      const added = Data.importFound(state, cls, list, ui.period, formLang(f));
+      // header values written on the form
+      for (const fl of f.m.fields) {
+        if (fl.mode !== 'after' || !fl.current) continue;
+        const v = fl.current.trim();
+        if (fl.key === 'class.adviser' && !cls.adviser) cls.adviser = v;
+        if (fl.key === 'class.gradeSection' && !cls.section) {
+          const m = /(\d{1,2})\s*[-–]?\s*(.*)/.exec(v);
+          if (m) { cls.grade = m[1]; cls.section = m[2].replace(/^[-–\s]+/, ''); } else cls.section = v;
+        }
+        if (fl.key === 'date') (state.dates = state.dates || {})[`${cls.id}:${ui.period}`] = v;
+      }
+      save(); render();
+      toast(`Brought in ${added.length} learners with their entries for ${ui.period}.`);
+    } else if (act === 'rm-learner') {
+      if (!armed(b, 'Remove?')) return;
+      const lid = b.closest('tr').dataset.lid;
+      for (const c of state.classes) c.learners = c.learners.filter(l => l.id !== lid);
+      delete state.results[lid]; save(); render();
+    } else if (act === 'toggle-preview') {
+      ui.preview = !ui.preview; render();
+      if (ui.preview) $('#preview').scrollIntoView({ block: 'start', behavior: 'smooth' });
+    } else if (act === 'save-form') saveForm(false);
+    else if (act === 'open-form') saveForm(true);
+    else if (act === 'fill-sheet') {
+      ui.form = b.dataset.tpl + ':' + b.dataset.i; ui.view = 'fill'; ui.tplId = null; ui.sel = null; save(); render(); window.scrollTo(0, 0);
     } else if (act === 'open-sheet') {
-      ui.tplId = b.dataset.tpl; ui.sheetIdx = +b.dataset.i; ui.sel = null; render(); window.scrollTo(0, 0);
+      ui.view = 'templates'; ui.tplId = b.dataset.tpl; ui.sheetIdx = +b.dataset.i; ui.sel = null; render(); window.scrollTo(0, 0);
     } else if (act === 'close-tpl') { ui.tplId = null; ui.sel = null; render(); }
     else if (act === 'del-tpl') {
       if (!armed(b, 'Click again to remove')) return;
       state.templates = state.templates.filter(t => t.id !== b.dataset.tpl); Data.kvDel('tpl:' + b.dataset.tpl); tplCache.delete(b.dataset.tpl); save(); render();
-    } else if (act === 'print-tpl') {
-      const t = state.templates.find(x => x.id === b.dataset.tpl);
-      const i = t.sheets.findIndex(m => m.kind !== 'none');
-      if (i < 0) { toast('No forms were found in this template.'); return; }
-      ui.print.form = t.id + ':' + i; ui.view = 'print'; render();
     } else if (act === 'redetect') {
       const t = state.templates.find(x => x.id === ui.tplId);
       const data = await tplData(t.id);
       const m = t.sheets[ui.sheetIdx];
-      const sheet = data.wb.sheets.find(s => s.path === m.sheetPath);
-      t.sheets[ui.sheetIdx] = Detect.detectSheet(sheet);
-      save(); renderMapper(); toast('Read the sheet again. Your manual changes on this sheet were replaced.');
-    } else if (act === 'mark-checked') {
-      const m = currentMapping(); m.checked = !m.checked; save(); renderMapper();
+      t.sheets[ui.sheetIdx] = Detect.detectSheet(data.wb.sheets.find(s => s.path === m.sheetPath));
+      save(); renderMapper(); toast('Read the sheet again.');
     } else if (act === 'del-field') {
       const m = currentMapping(); m.fields = m.fields.filter(f => f.id !== b.dataset.id); save(); renderMapper();
     } else if (act === 'clear-sel') { ui.sel = null; renderMapper(); }
@@ -2664,66 +2957,93 @@ window.SAMPLE_TEMPLATES = {
       const key = $('#sel-key').value, modeV = $('#sel-mode').value;
       const f = { id: Data.uid('F'), ref: ui.sel, key, conf: 1, label: L(key) };
       if (modeV.startsWith('blank:')) { f.mode = 'blank'; f.blankIndex = +modeV.split(':')[1]; }
-      else if (modeV === 'find') {
-        f.mode = 'find'; f.find = $('#sel-find').value;
-        if (!f.find) { toast('Type the word or number to replace.'); return; }
-      } else f.mode = 'value';
+      else if (modeV === 'find') { f.mode = 'find'; f.find = $('#sel-find').value; if (!f.find) { toast('Type the word or number to replace.'); return; } }
+      else f.mode = modeV;
       m.fields.push(f); ui.sel = null; save(); renderMapper();
     } else if (act === 'del-lcol') {
       const m = currentMapping(); const l = m.lists[+b.dataset.li];
       const [col] = l.columns.splice(+b.dataset.ci, 1);
-      (l.unknownColumns = l.unknownColumns || []).push({ col: col.col, label: col.label || '' });
+      (l.unknownColumns = l.unknownColumns || []).push({ col: col.col, label: col.label || '', chain: col.chain });
       save(); renderMapper();
     } else if (act === 'add-lcol') {
       const m = currentMapping(); const l = m.lists[+b.dataset.li];
       const col = +b.dataset.col;
-      l.unknownColumns = (l.unknownColumns || []).filter(u => u.col !== col);
-      l.columns.push({ col, key: 'a.remarks', conf: 1 }); l.columns.sort((a, b2) => a.col - b2.col);
+      const u = (l.unknownColumns || []).find(x => x.col === col) || {};
+      l.unknownColumns = (l.unknownColumns || []).filter(x => x.col !== col);
+      const chain = u.chain || [u.label || XL.numToCol(col)];
+      l.columns.push({ col, key: 'x:' + Detect.norm(chain.join(' ')).slice(0, 60) || 'x:col' + col, input: 'text', chain, label: chain.join(' › '), conf: 1 });
+      l.columns.sort((a, c2) => a.col - c2.col);
       save(); renderMapper();
-    } else if (act === 'save-form') saveForm(false);
-    else if (act === 'open-form') saveForm(true);
-    else if (act === 'backup') {
+    } else if (act === 'add-class') {
+      state.classes.push({ id: Data.uid('c'), sy: state.sy, grade: '', section: '', adviser: '', designation: '', learners: [] }); save(); render();
+    } else if (act === 'del-class') {
+      if (!armed(b, 'Click again to delete')) return;
+      const cid = b.closest('tr').dataset.cid;
+      const c = state.classes.find(x => x.id === cid);
+      for (const l of c.learners) delete state.results[l.id];
+      state.classes = state.classes.filter(x => x !== c); save(); render(); toast('Class deleted.');
+    } else if (act === 'backup') {
       const json = await makeBackup();
       const r = await saveBlob(`phil-iri-backup-${new Date().toISOString().slice(0, 10)}.json`, new Blob([json], { type: 'application/json' }));
       if (r.status === 'saved') toast('Backup saved.');
     } else if (act === 'reset-all') {
       if (!armed(b, 'Click again to erase everything')) return;
       for (const t of state.templates) Data.kvDel('tpl:' + t.id);
-      state = Data.emptyState(); tplCache.clear(); ui.classId = null; save(); render(); toast('Everything was erased.');
+      state = Data.emptyState(); tplCache.clear(); ui.classId = null; ui.form = null; save(); render(); toast('Everything was erased.');
     }
   });
 
   document.addEventListener('change', async (e) => {
     const t = e.target;
-    const c = currentClass();
-    if (t.id === 'sy-input') { state.sy = t.value.trim() || state.sy; ui.classId = null; save(); render(); return; }
-    if (t.dataset.cf && c) { c[t.dataset.cf] = t.value; save(); if (t.dataset.cf === 'grade' || t.dataset.cf === 'section') render(); return; }
-    if (t.dataset.f && c) {
-      const l = c.learners.find(x => x.id === t.closest('tr').dataset.lid);
-      if (l) { l[t.dataset.f] = t.value.trim(); save(); if (t.dataset.f === 'sex') render(); }
+    // entry table
+    if (t.closest && t.closest('table.entry') && t.dataset.ci != null && !t.classList.contains('add-name')) {
+      const f = currentForm();
+      const tr = t.closest('tr');
+      const l = findLearner(tr.dataset.lid);
+      const cols = f.m.lists[+t.dataset.li].columns.slice().sort((a, b) => a.col - b.col);
+      const c = cols[+t.dataset.ci];
+      setGridValue(l, c, t.type === 'checkbox' ? t.checked : t.value, formLang(f));
+      if (colKind(c) === 'name') t.value = Data.fullName(l, state.settings);
+      refreshRow(tr, f, +t.dataset.li);
+      if (colKind(c) === 'sex') render();
+      if (ui.preview) refreshPreview();
       return;
     }
-    if (t.dataset.r) {
-      const lid = t.closest('tr').dataset.lid;
-      const v = t.type === 'checkbox' ? t.checked : t.value;
-      Data.setResult(state, lid, ui.period, ui.lang, { [t.dataset.r]: v });
+    if (t.id === 'fill-form') { ui.form = t.value; ui.preview = false; const f = currentForm(); if (f && f.m.language) ui.lang = f.m.language; save(); render(); return; }
+    if (t.id === 'fill-class') {
+      if (t.value === '__new') { const c = { id: Data.uid('c'), sy: state.sy, grade: '', section: '', adviser: '', designation: '', learners: [] }; state.classes.push(c); ui.classId = c.id; }
+      else ui.classId = t.value;
+      save(); render(); return;
+    }
+    if (t.id === 'fill-grade') { ui.grade = t.value; save(); render(); return; }
+    if (t.dataset.detail) {
+      const [label, where, prop] = DETAIL_FIELDS[t.dataset.detail]; // eslint-disable-line no-unused-vars
+      const v = t.value.trim();
+      if (where === 'school') state.school[prop] = v;
+      else if (where === 'class') { const c = currentClass(true); c[prop] = v; }
+      else { const c = currentClass(true); (state.dates = state.dates || {})[`${c.id}:${ui.period}`] = v; }
       save();
-      if (t.type === 'checkbox' || ['words', 'miscues', 'compCorrect', 'compTotal'].includes(t.dataset.r)) render();
+      if (where === 'class' && (prop === 'grade' || prop === 'section')) render();
+      else if (ui.preview) refreshPreview();
       return;
     }
-    if (t.id === 'res-class') { ui.classId = t.value; save(); render(); return; }
-    if (t.id === 'helper-toggle') { ui.helper = t.checked; render(); return; }
+    if (t.id === 'pg-fit') { ui.page.fit = t.checked; refreshPreview(); return; }
+    if (t.id === 'pg-orient') { ui.page.orient = t.value; refreshPreview(); return; }
+    if (t.id === 'pg-paper') { ui.page.paper = t.value; refreshPreview(); return; }
     if (t.id === 'tpl-file' && t.files[0]) { const file = t.files[0]; await importTemplate(await file.arrayBuffer(), file.name); return; }
-    // mapper
+    // classes
+    if (t.id === 'sy-input') { state.sy = t.value.trim() || state.sy; ui.classId = null; save(); render(); return; }
+    if (t.dataset.cf) { const c = state.classes.find(x => x.id === t.closest('tr').dataset.cid); c[t.dataset.cf] = t.value.trim(); save(); return; }
+    // adjust
     if (t.id === 'sheet-pick') { ui.sheetIdx = +t.value; ui.sel = null; renderMapper(); return; }
     const m = ui.view === 'templates' && ui.tplId ? currentMapping() : null;
     if (m) {
-      if (t.id === 'kind-pick') { m.kind = t.value; }
-      else if (t.id === 'lang-pick') { m.language = t.value || null; }
+      if (t.id === 'kind-pick') m.kind = t.value;
+      else if (t.id === 'lang-pick') m.language = t.value || null;
       else if (t.dataset.field) { const f = m.fields.find(x => x.id === t.dataset.field); f.key = t.value; f.label = L(t.value); f.conf = 1; }
       else if (t.dataset.part) { const [li, pi, k] = t.dataset.part.split(':'); const p = m.lists[+li].parts[+pi]; p[k] = k === 'sex' ? (t.value || null) : +t.value; m.lists[+li].lastRow = Math.max(...m.lists[+li].parts.map(x => x.last)); }
       else if (t.dataset.lcol) { const [li, ci] = t.dataset.lcol.split(':').map(Number); const col = m.lists[li].columns[ci]; col.key = t.value; col.conf = 1; delete col.choice; col.flag = ['a.struggling', 'a.nonReader'].includes(t.value); }
-      else if (t.dataset.lchoice) { const [li, ci] = t.dataset.lchoice.split(':').map(Number); const col = m.lists[li].columns[ci]; col.choice = t.value || undefined; col.conf = 1; }
+      else if (t.dataset.xinput) { const [li, ci] = t.dataset.xinput.split(':').map(Number); const col = m.lists[li].columns[ci]; col.input = t.value; col.conf = 1; }
       else if (t.dataset.lmark) { const [li, ci] = t.dataset.lmark.split(':').map(Number); m.lists[li].columns[ci].mark = t.value; }
       else if (t.dataset.srow) { const [si, k] = t.dataset.srow.split(':').map(Number); m.summaries[si].rows[k] = +t.value; }
       else if (t.dataset.sgroup) { m.summaries[+t.dataset.sgroup].groupBy = t.value; m.kind = t.value === 'section' ? 'grade' : 'school'; }
@@ -2731,22 +3051,11 @@ window.SAMPLE_TEMPLATES = {
       else return;
       save(); renderMapper(); return;
     }
-    // print
-    if (t.id === 'pr-form') { ui.print.form = t.value; render(); return; }
-    if (t.id === 'pr-class') { ui.print.classId = t.value; render(); return; }
-    if (t.id === 'pr-grade') { ui.print.grade = t.value; render(); return; }
-    if (t.id === 'pr-fit') { ui.print.fit = t.checked; refreshPreview(); return; }
-    if (t.id === 'pr-orient') { ui.print.orient = t.value; refreshPreview(); return; }
-    if (t.id === 'pr-paper') { ui.print.paper = t.value; refreshPreview(); return; }
-    if (t.id === 'pr-only') { ui.print.keepAll = !t.checked; refreshPreview(); return; }
     // settings
     if (t.dataset.s) { state.school[t.dataset.s] = t.value.trim(); save(); return; }
     if (t.dataset.pn) { state.settings.periodNames[t.dataset.pn] = t.value.trim(); save(); return; }
-    if (t.dataset.rule) { const [a, k] = t.dataset.rule.split('.'); state.settings.rules[a][k] = +t.value; save(); return; }
     if (t.id === 'set-order') { state.settings.nameOrder = t.value; save(); return; }
     if (t.id === 'set-upper') { state.settings.upperNames = t.checked; save(); return; }
-    if (t.id === 'set-mark') { state.settings.defaultMark = t.value || '1'; save(); return; }
-    if (t.id === 'set-combine') { state.settings.combine = t.value; save(); return; }
     if ((t.id === 'restore-file' || t.id === 'merge-file') && t.files[0]) {
       try {
         const json = JSON.parse(await t.files[0].text());
@@ -2755,7 +3064,7 @@ window.SAMPLE_TEMPLATES = {
           state = Object.assign(Data.emptyState(), json.state);
           tplCache.clear();
           for (const [id, b64] of Object.entries(json.templates || {})) await Data.kvSet('tpl:' + id, b64ToBuf(b64));
-          ui.classId = null; save(); render(); toast('Backup restored.');
+          ui.classId = null; ui.form = null; save(); render(); toast('Backup restored.');
         } else {
           const have = new Set(state.classes.map(x => x.id));
           const add = json.state.classes.filter(x => !have.has(x.id));
@@ -2768,19 +3077,39 @@ window.SAMPLE_TEMPLATES = {
     }
   });
 
-  // paste a block from Excel straight into the learner grid
+  document.addEventListener('keydown', (e) => {
+    const t = e.target;
+    if (e.key !== 'Enter' || !t.closest || !t.closest('table.entry')) return;
+    if (t.classList.contains('add-name')) {
+      e.preventDefault();
+      if (!t.value.trim()) return;
+      const [l] = addLearners([t.value], t.dataset.sex);
+      const id = t.id;
+      render();
+      const next = document.getElementById(id); if (next) next.focus();
+      toast(`Added ${Data.fullName(l, state.settings)}.`);
+      return;
+    }
+    // Enter: same column, next learner
+    e.preventDefault();
+    t.dispatchEvent(new Event('change', { bubbles: true }));
+    const tr = t.closest('tr');
+    let next = tr.nextElementSibling;
+    while (next && !next.dataset.lid && !next.classList.contains('addrow')) next = next.nextElementSibling;
+    const target = next && (next.dataset.lid ? next.querySelector(`[data-ci="${t.dataset.ci}"]`) : next.querySelector('.add-name'));
+    if (target) target.focus();
+  });
+
   document.addEventListener('paste', (e) => {
     const t = e.target;
-    if (!t.dataset || !t.dataset.f) return;
+    if (!t.closest || !t.closest('table.entry')) return;
     const text = (e.clipboardData || window.clipboardData).getData('text');
     if (!text.includes('\n') && !text.includes('\t')) return;
     e.preventDefault();
-    $('#paste-box').value = text;
-    $('#paste-hint').textContent = 'Pasted below. Check it, then press “Add these learners”.';
-    $('#paste-box').scrollIntoView({ block: 'center' });
+    pasteBlock(t, text);
   });
 
-  // drag and drop templates
+  // drag and drop a form anywhere on the upload box
   document.addEventListener('dragover', (e) => { const d = e.target.closest && e.target.closest('#drop'); if (d) { e.preventDefault(); d.classList.add('over'); } });
   document.addEventListener('dragleave', (e) => { const d = e.target.closest && e.target.closest('#drop'); if (d) d.classList.remove('over'); });
   document.addEventListener('drop', async (e) => {
@@ -2798,15 +3127,7 @@ window.SAMPLE_TEMPLATES = {
       state = Object.assign(Data.emptyState(), saved);
       state.settings = Object.assign(Data.emptyState().settings, saved.settings);
       Object.assign(ui, saved.ui || {});
-    } else {
-      state = Data.sampleState();
-      render();
-      const first = Object.keys(window.SAMPLE_TEMPLATES || {})[0];
-      if (first) {
-        const s = window.SAMPLE_TEMPLATES[first];
-        await importTemplate(b64ToBuf(s.data), s.file, s.name, true);
-      }
-      ui.view = 'classes';
+      if (!['fill', 'templates', 'classes', 'settings'].includes(ui.view)) ui.view = 'fill';
     }
     render();
   }

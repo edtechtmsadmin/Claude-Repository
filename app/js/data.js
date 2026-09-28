@@ -24,6 +24,7 @@
       },
       classes: [],
       results: {},
+      dates: {},
       templates: [],
       ui: {},
     };
@@ -158,15 +159,16 @@
       case 'sy': return state.sy;
       case 'period': return state.settings.periodNames[ctx.period] || ctx.period;
       case 'language': return ctx.lang;
-      case 'date': return ctx.date || '';
+      case 'date': return ctx.date || (state.dates || {})[`${ctx.classId}:${ctx.period}`] || '';
       case 'class.grade': return grade != null ? String(grade) : '';
       case 'class.section': return cls.section || '';
-      case 'class.gradeSection': return cls.grade ? `Grade ${cls.grade} - ${cls.section || ''}` : '';
+      case 'class.gradeSection': return cls.grade ? (cls.section && cls.section.length <= 3 ? `${cls.grade}-${cls.section}` : `Grade ${cls.grade} - ${cls.section || ''}`) : '';
       case 'class.adviser': return cls.adviser || '';
       case 'class.designation': return cls.designation || '';
       case 'count.male': return learners.filter(l => l.sex === 'M').length;
       case 'count.female': return learners.filter(l => l.sex === 'F').length;
       case 'count.total': return learners.length;
+      case 'tick:BOSY': case 'tick:MOSY': case 'tick:EOSY': return key.slice(5) === ctx.period ? '√' : '';
       case 'learner.name': return ctx.learner ? fullName(ctx.learner, state.settings) : '';
       case 'learner.lrn': return ctx.learner ? ctx.learner.lrn || '' : '';
       case 'learner.sex': return ctx.learner ? ctx.learner.sex || '' : '';
@@ -174,10 +176,42 @@
     }
   }
 
+  const numOf = v => (v === '' || v == null || isNaN(+v)) ? null : +v;
+  // value of a template-specific column (scores, ticks, totals) for one learner
+  function extraValue(col, res) {
+    const x = res.x || {};
+    if (col.input === 'total') {
+      const parts = (col.sumOf || []).map(k => numOf(x[k])).filter(v => v != null);
+      return parts.length ? parts.reduce((a, b) => a + b, 0) : numOf(x[col.key]);
+    }
+    if (col.input === 'cond') {
+      const t = col.of ? col.ofValue : null;
+      if (t == null) return null;
+      return col.op === 'lt' ? t < col.n : t >= col.n;
+    }
+    if (col.input === 'check') return !!x[col.key];
+    return x[col.key] ?? null;
+  }
+  // totals of a row, so "Score < 27" can look at "Total Score"
+  function withTotals(columns, res) {
+    return columns.map(c => {
+      if (c.input !== 'cond') return c;
+      const t = columns.find(k => k.key === c.of);
+      return Object.assign({}, c, { ofValue: t ? extraValue(t, res) : null });
+    });
+  }
+
   function columnValue(col, learner, index, state, ctx) {
     const res = result(state, learner.id, ctx.period, ctx.lang);
     const comp = computed(res, state.settings);
     const mark = col.mark != null ? (String(col.mark) === '1' ? 1 : col.mark) : (state.settings.defaultMark === '1' ? 1 : state.settings.defaultMark);
+    if (col.key && col.key.startsWith('x:')) {
+      if (col.input === 'formula') return null;
+      const v = extraValue(col, res);
+      if (col.input === 'check' || col.input === 'cond') return v ? mark : null;
+      if (col.input === 'number' || col.input === 'total') return numOf(v);
+      return v === '' ? null : v;
+    }
     switch (col.key) {
       case 'row.no': return index + 1;
       case 'learner.name': return fullName(learner, state.settings);
@@ -237,10 +271,16 @@
         continue;
       }
       let text = original;
+      const after = fs.find(f => f.mode === 'after');
+      if (after) {
+        const v = singleValue(after.key, state, ctx);
+        if (v === '' || v == null) warnings.push(`No value for “${after.label}” (cell ${ref}).`);
+        else text = text.replace(/^(\s*[^:]*:\s*).*$/s, (m, head) => head + v);
+      }
       const blanks = fs.filter(f => f.mode === 'blank').sort((a, b) => b.blankIndex - a.blankIndex);
       for (const f of blanks) {
         const v = singleValue(f.key, state, ctx);
-        if (v === '' || v == null) { warnings.push(`No value for “${f.label}” (cell ${ref}).`); continue; }
+        if (v === '' || v == null) { if (!f.key.startsWith('tick:')) warnings.push(`No value for “${f.label}” (cell ${ref}).`); continue; }
         const runs = [...text.matchAll(/_{3,}/g)];
         const run = runs[f.blankIndex];
         if (run) text = text.slice(0, run.index) + String(v) + text.slice(run.index + run[0].length);
@@ -300,14 +340,27 @@
       return { list: l, parts };
     });
     const pageCount = Math.max(1, ...listPlans.flatMap(lp => lp.parts.map(pp => Math.ceil(pp.learners.length / pp.cap) || 1)));
+    // a template that was already filled in: clear the old entries in the learner rows first
+    const clears = [];
+    for (const lp of listPlans) {
+      for (const p of lp.list.parts) for (let r = p.first; r <= p.last; r++) {
+        for (const col of lp.list.columns) {
+          if (col.key === 'row.no' || col.input === 'formula') continue;
+          const ref = global.XL.makeRef(r, col.col);
+          const cell = sheet.cells.get(ref);
+          if (cell && cell.value != null && cell.value !== '' && !cell.formula) clears.push({ ref, value: null });
+        }
+      }
+    }
     for (let pg = 0; pg < pageCount; pg++) {
-      const writes = base.slice();
+      const writes = base.concat(clears);
       for (const lp of listPlans) {
         for (const pp of lp.parts) {
           const slice = pp.learners.slice(pg * pp.cap, (pg + 1) * pp.cap);
           slice.forEach((learner, i) => {
             const r = pp.part.first + i;
-            for (const col of lp.list.columns) {
+            const rowCols = withTotals(lp.list.columns, result(state, learner.id, ctx.period, ctx.lang));
+            for (const col of rowCols) {
               const v = columnValue(col, learner, pg * pp.cap + i, state, ctx);
               if (v === null || v === undefined || v === '') continue;
               writes.push({ ref: global.XL.makeRef(r, col.col), value: v });
@@ -323,12 +376,67 @@
   }
 
   // Missing entries that would leave the form incomplete
-  function missingResults(state, ctx) {
+  function missingResults(state, ctx, mapping) {
+    if (mapping && !mapping.lists.some(l => l.columns.some(c => c.key === 'a.level'))) return [];
     const learners = groupLearners(state, ctx);
     return learners.filter(l => {
       const res = result(state, l.id, ctx.period, ctx.lang);
       return !res.level && !computed(res, state.settings).suggested && !res.nonReader;
     });
+  }
+
+  function parseName(text) {
+    const l = { id: uid('l'), lrn: '', last: '', first: '', middle: '', ext: '', sex: '' };
+    const t = String(text).replace(/\s+/g, ' ').trim();
+    if (t.includes(',')) {
+      const [last, rest = ''] = t.split(/,(.*)/s);
+      const parts = rest.trim().split(' ').filter(Boolean);
+      l.last = last.trim();
+      const ext = parts.findIndex(p => /^(jr\.?|sr\.?|ii|iii|iv)$/i.test(p));
+      if (ext >= 0) l.ext = parts.splice(ext, 1)[0];
+      if (parts.length > 1 && /^[A-Za-z]\.?$/.test(parts[parts.length - 1])) l.middle = parts.pop().replace(/\.$/, '');
+      else if (parts.length > 2) l.middle = parts.pop();
+      l.first = parts.join(' ');
+    } else {
+      const parts = t.split(' ');
+      l.last = parts.length > 1 ? parts.pop() : t;
+      l.first = parts.join(' ');
+    }
+    return l;
+  }
+  const truthy = v => v != null && String(v).trim() !== '' && !/^(x|0|no|false)$/i.test(String(v).trim());
+
+  // rows = list.found from detection; returns learners added
+  function importFound(state, cls, list, period, lang) {
+    const added = [];
+    for (const row of list.found || []) {
+      const l = parseName(row.name);
+      l.sex = row.sex || '';
+      const patch = { x: {} };
+      for (const c of list.columns) {
+        const v = row.values[c.col];
+        if (v == null) continue;
+        if (c.key === 'learner.lrn') l.lrn = v;
+        else if (c.key === 'learner.sex' && !c.choice) l.sex = /^f/i.test(v) ? 'F' : /^m/i.test(v) ? 'M' : l.sex;
+        else if (c.key === 'learner.sex' && c.choice && truthy(v)) l.sex = c.choice;
+        else if (c.key === 'a.level' && c.choice) { if (truthy(v)) patch.level = c.choice; }
+        else if (c.key === 'a.level') { const m = LEVELS.find(x => x.toLowerCase().startsWith(String(v).toLowerCase().slice(0, 4))); if (m) patch.level = m; }
+        else if (c.key === 'a.indepGrade') { const m = /(\d+)/.exec(v); if (m) patch.indepGrade = m[1]; }
+        else if (c.key === 'a.struggling') patch.struggling = truthy(v);
+        else if (c.key === 'a.nonReader') patch.nonReader = truthy(v);
+        else if (c.key === 'a.remarks') patch.remarks = v;
+        else if (c.key && c.key.startsWith('x:') && (c.input === 'number' || c.input === 'text')) patch.x[c.key] = c.input === 'number' ? numOf(v) : v;
+        else if (c.key && c.key.startsWith('x:') && c.input === 'check') patch.x[c.key] = truthy(v);
+      }
+      cls.learners.push(l);
+      setResult(state, l.id, period, lang, patch);
+      added.push(l);
+    }
+    return added;
+  }
+  function setExtra(state, learnerId, period, lang, key, value) {
+    const cur = result(state, learnerId, period, lang);
+    setResult(state, learnerId, period, lang, { x: Object.assign({}, cur.x || {}, { [key]: value }) });
   }
 
   // ---------- samples ----------
@@ -373,5 +481,6 @@
     kvGet, kvSet, kvDel, persistent,
     fullName, sortLearners, result, setResult, computed,
     buildWrites, missingResults, groupLearners, sampleState,
+    extraValue, withTotals, importFound, parseName, setExtra, singleValue,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

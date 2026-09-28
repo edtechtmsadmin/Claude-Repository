@@ -177,7 +177,82 @@ def sample_b():
     wb.save(OUT / "sample-template-B.xlsx")
 
 
+def sample_gst(filled=False):
+    """GST class profile laid out like Phil-IRI Form 1A (from a teacher's screenshot)."""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "GST English"
+    widths = [6, 34, 10, 9, 11, 11, 11, 9, 9]
+    for i, w in enumerate(widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+    ws["I1"] = "Sample Phil-IRI Form 1A (for testing only)"
+    ws["I1"].font = Font(size=7, italic=True)
+    ws["I1"].alignment = Alignment(horizontal="right")
+    for r, text, bold in [(3, "Republika ng Pilipinas", True), (4, "Kagawaran ng Edukasyon", True), (5, "Rehiyon V", False),
+                          (6, "TANGGAPAN NG MGA PAARALANG PANSANGAY", True)]:
+        ws.merge_cells(f"A{r}:I{r}")
+        ws[f"A{r}"] = text
+        ws[f"A{r}"].font = Font(name="Arial", size=9, bold=bold)
+        ws[f"A{r}"].alignment = Alignment(horizontal="center")
+    ws.merge_cells("A8:I8")
+    ws["A8"] = "CLASS GROUP SCREENING TEST (GST) PROFILE IN ENGLISH"
+    box(ws, "A8:I8", fill=PatternFill("solid", fgColor="C6E0B4"), bold=True)
+    bold = Font(name="Arial", size=8, bold=True)
+    vals = {"A9": "School: " + ("Sample National High School" if filled else ""),
+            "F9": "District: " + ("Sample District" if filled else ""),
+            "A10": "Grade & Section: " + ("12-A" if filled else ""),
+            "F10": "Teacher: " + ("JUAN D. SANTOS" if filled else ""),
+            "A11": "____Pre-Test ____ Post Test (\u221a appropriately)",
+            "F11": "Date of Assessment: " + ("June 9, 2026" if filled else "")}
+    for ref, text in vals.items():
+        ws[ref] = text.rstrip() if not filled else text
+        ws[ref].font = bold
+    ws.merge_cells("A9:E9"); ws.merge_cells("A10:E10"); ws.merge_cells("A11:C11")
+    box(ws, "A11:C11", bold=True, align=Alignment(horizontal="left"))
+    heads = [("A13:A14", "No."), ("B13:B14", "Name"), ("C13", "Test Taken"), ("C14", "(\u221a or X)"),
+             ("D13:F13", "Number of Correct Responses"), ("D14", "Literal"), ("E14", "Inferential"),
+             ("F14", "Applied / Critical"), ("G13:G14", "Total Score"), ("H13", "Score < 27"), ("H14", "(\u221a)"),
+             ("I13", "Score >/= 28"), ("I14", "(\u221a)")]
+    for rng, text in heads:
+        if ":" in rng:
+            ws.merge_cells(rng)
+        ws[rng.split(":")[0]] = text
+    box(ws, "A13:I14", bold=True)
+    ws.row_dimensions[14].height = 24
+    first, last = 15, 64
+    box(ws, f"A{first}:I{last}")
+    f = Font(name="Arial", size=8)
+    names = ["ABAD, CARLO M.", "CASTILLO, MARK D.", "ESTRADA, JOHN PAUL L.", "GARCIA, MIGUEL T.",
+             "BAUTISTA, LIZA R.", "DELA CRUZ, ANGELA P.", "FERNANDEZ, KRISTINE G."]
+    scores = [(7, 10, 10), (5, 7, 9), (7, 9, 10), (6, 13, 9), (6, 11, 12), (7, 13, 8), (6, 9, 6)]
+    for r in range(first, last + 1):
+        ws.cell(row=r, column=1, value=r - first + 1)
+        for c in range(1, 10):
+            ws.cell(row=r, column=c).font = f
+            ws.cell(row=r, column=c).alignment = Alignment(horizontal="left" if c == 2 else "center")
+    if filled:
+        for i, (n, sc) in enumerate(zip(names, scores)):
+            r = first + i
+            ws.cell(row=r, column=2, value=n)
+            ws.cell(row=r, column=3, value=1)
+            for j, v in enumerate(sc):
+                ws.cell(row=r, column=4 + j, value=v)
+            t = sum(sc)
+            ws.cell(row=r, column=7, value=t)
+            ws.cell(row=r, column=8 if t <= 27 else 9, value=1)
+    s = last + 3
+    ws[f"B{s}"] = "Prepared by:"
+    ws.merge_cells(f"C{s + 2}:E{s + 2}")
+    for c in "CDE":
+        ws[f"{c}{s + 2}"].border = UNDER
+    ws[f"C{s + 3}"] = "Teacher"
+    page_setup(ws, landscape=False)
+    wb.save(OUT / ("sample-template-GST-filled.xlsx" if filled else "sample-template-GST.xlsx"))
+
+
 if __name__ == "__main__":
     sample_a()
     sample_b()
+    sample_gst()
+    sample_gst(filled=True)
     print("wrote", OUT / "sample-template-A.xlsx", OUT / "sample-template-B.xlsx")

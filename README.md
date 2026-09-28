@@ -6,19 +6,21 @@ templates change every school year.
 
 ## How it works
 
-1. **Import the DepEd template** (`.xlsx`). The app reads every sheet and works
-   out where things go: school and header details, the learner table (including
-   separate male and female tables), "Put 1" level columns, struggling and
-   non-reader columns, and count tables for grade-level and school summaries.
-2. **Check the highlighted cells once.** Green means sure; amber means please
-   check. Click any cell to change what goes there, then mark the sheet as checked.
-3. **Enter classes, learners and reading results.** English and Filipino are
-   recorded separately.
-4. **Print forms.** The app writes your data into a copy of the original DepEd
-   file and saves it as Excel. Everything else (logo, fonts, borders, merged
-   cells, formulas) is left untouched, so the printout matches the template.
+1. **Upload the form** (`.xlsx`), blank or already filled in.
+2. **Type into the table that appears.** It has the same columns as the form
+   (for example Test Taken, Literal, Inferential, Applied/Critical, Total Score,
+   Score < 27, or the Independent / Instructional / Frustration "Put 1" columns).
+   Totals and "Score < 27 / ≥ 28" ticks fill themselves. Names and scores can be
+   pasted from Excel. A filled form's learners and entries can be brought in
+   with one click.
+3. **Save as Excel file** (or *Open in Excel to print* in the desktop app). The
+   app writes into a copy of the original form, so logos, fonts, borders,
+   merged cells and formulas stay exactly as DepEd made them.
 
-Next year, import the new template and your data flows into the new layout.
+Learners are kept per class for the whole school year, so they are typed once
+and reused for BOSY, MOSY, EOSY and every form. Next year, upload the new form
+and keep going. *My forms › Adjust* is there only if something lands in the
+wrong cell.
 
 ## Try it
 
@@ -28,8 +30,8 @@ Next year, import the new template and your data flows into the new layout.
 | Single file, no install | Download [`dist/phil-iri-recorder.html`](dist/phil-iri-recorder.html) and open it in Chrome or Edge. Data stays in that browser; use *Save backup*. |
 | From source | `npm install` then `npm start` (needs Node.js 20+). |
 
-The app opens with **sample data** and a sample template so you can try it
-right away. Use *Clear sample data and start* when you are ready.
+The first screen asks for a form. There are two sample forms to try if you
+don't have one at hand.
 
 ## What it supports now
 

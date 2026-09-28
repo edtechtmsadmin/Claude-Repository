@@ -36,7 +36,7 @@
     'class.section': ['section', 'pangkat'],
     'class.adviser': ['teacher', 'name of teacher', 'class adviser', 'adviser', 'assessor', 'guro', 'name of assessor', 'tester', 'name of adviser'],
     'class.designation': ['designation', 'position'],
-    'date': ['date', 'date of test', 'date of testing', 'petsa', 'date administered'],
+    'date': ['date', 'date of test', 'date of testing', 'petsa', 'date administered', 'date of assessment', 'date of screening'],
     'count.male': ['male', 'boys', 'no of male', 'lalaki', 'no of males'],
     'count.female': ['female', 'girls', 'babae', 'no of female', 'no of females'],
     'count.total': ['total', 'total enrolment', 'total enrollment', 'enrolment', 'enrollment'],
@@ -48,7 +48,7 @@
     'school.name': 'School name', 'school.id': 'School ID', 'school.idName': 'School ID - School name',
     'school.district': 'District', 'school.division': 'Division', 'school.region': 'Region',
     'school.head': 'School head', 'school.chair': 'Grade level chairperson', 'school.coordinator': 'Reading coordinator',
-    'sy': 'School year', 'period': 'Assessment period', 'language': 'Language',
+    'sy': 'School year', 'period': 'Assessment period', 'tick:BOSY': 'Pre-test tick', 'tick:MOSY': 'Midyear tick', 'tick:EOSY': 'Post-test tick', 'language': 'Language',
     'class.gradeSection': 'Grade & section', 'class.grade': 'Grade', 'class.section': 'Section',
     'class.adviser': 'Teacher / assessor', 'class.designation': 'Teacher designation', 'date': 'Date',
     'count.male': 'Number of male learners', 'count.female': 'Number of female learners', 'count.total': 'Total learners',
@@ -70,7 +70,7 @@
     'a.wordPct': ['word reading score', 'word reading score %', 'word reading', 'word reading %', 'word recognition', 'oral reading score'],
     'a.time': ['reading time', 'reading time sec', 'time', 'time in seconds', 'seconds'],
     'a.wpm': ['reading rate', 'reading rate wpm', 'wpm', 'words per minute', 'speed'],
-    'a.compCorrect': ['comprehension score', 'no of correct answers', 'correct answers', 'score'],
+    'a.compCorrect': ['comprehension score', 'no of correct answers', 'correct answers'],
     'a.compPct': ['comprehension %', 'comprehension', 'percentage comprehension', 'comprehension percentage'],
     'a.level': ['reading level', 'reading profile', 'level', 'overall reading level', 'reading profile level', 'profile'],
     'a.remarks': ['remarks', 'notes', 'intervention', 'interventions', 'interventions remarks', 'puna'],
@@ -176,6 +176,7 @@
       const col = columnMeaning(chain);
       col.col = c;
       col.label = chain.join(' › ');
+      col.chain = chain;
       if (col.key === 'row.no') noCol = c;
       if (col.key || chain.length) columns.push(col);
     }
@@ -200,8 +201,7 @@
       if (texts.length === 1 && /^(male|female|boys|girls|m|f)$/.test(first)) { pendingSex = sexOf(first); continue; }
       if (rowPx(sheet, r) > 0 && rowPx(sheet, r) < 12 && !texts.length) continue; // thin spacer row
       const bordered = hasBorder(sheet, r, nc, 'bottom') || hasBorder(sheet, r, nc, 'left');
-      const nameEmpty = isEmpty(sheet, r, nc);
-      if (bordered && nameEmpty) {
+      if (bordered) {
         gap = 0;
         if (!cur) { cur = { first: r, last: r, sex: pendingSex }; pendingSex = null; }
         cur.last = r;
@@ -212,15 +212,102 @@
     }
     if (cur) parts.push(cur);
     if (!parts.length) return null;
+    const lastRow = parts[parts.length - 1].last;
+
+    // extra columns: link totals to the scores they add up, and "< 27" checks to the total
+    const cols = columns.filter(c => c.key);
+    cols.forEach((c, i) => {
+      if (c.input === 'total') {
+        const keys = [];
+        for (let j = i - 1; j >= 0 && (cols[j].input === 'number'); j--) {
+          if (c.group && cols[j].group && cols[j].group !== c.group && keys.length) break;
+          keys.unshift(cols[j].key);
+        }
+        c.sumOf = keys;
+      }
+    });
+    const totals = cols.filter(c => c.input === 'total');
+    const conds = cols.filter(c => c.input === 'cond');
+    for (const c of conds) {
+      const t = totals.filter(x => x.col < c.col).pop() || totals[0];
+      c.of = t ? t.key : null;
+      // "< 27" next to ">= 28" means 27 and below
+      if (c.op === 'lt') { const ge = conds.find(x => x.op === 'ge'); if (ge && ge.n === c.n + 1) c.n = ge.n; }
+    }
+    // a SUM or COUNT under a tick column needs the number 1, not a check mark
+    for (const c of cols) {
+      if (!(c.input === 'check' || c.input === 'cond' || c.choice || c.flag)) continue;
+      for (let rr = lastRow + 1; rr <= lastRow + 3; rr++) {
+        const cell = sheet.cells.get(makeRef(rr, c.col));
+        if (cell && cell.formula && /\b(SUM|COUNT)\(/i.test(cell.formula)) { c.mark = 1; break; }
+      }
+      if (c.mark == null) c.mark = '√';
+    }
+    // template cells that are formulas are left to Excel
+    for (const c of cols) {
+      const cell = sheet.cells.get(makeRef(parts[0].first, c.col));
+      if (cell && cell.formula && c.key !== 'row.no') { c.input = 'formula'; }
+    }
+
+    // learners already written on the form (a filled template)
+    const found = [];
+    for (const p of parts) {
+      for (let rr = p.first; rr <= p.last; rr++) {
+        const name = cellText(sheet, rr, nc).trim();
+        if (!name || /^\d+$/.test(name)) continue;
+        const values = {};
+        for (const c of cols) {
+          const t = cellText(sheet, rr, c.col).trim();
+          if (t !== '') values[c.col] = t;
+        }
+        found.push({ sex: p.sex, name, values });
+      }
+    }
+
+    // on a filled form, use the tick the teacher already used ("1", "√", "/", "x")
+    for (const c of cols) {
+      if (!(c.input === 'check' || c.input === 'cond' || c.choice || c.flag)) continue;
+      const seen = found.map(f => f.values[c.col]).filter(v => v != null && v !== '');
+      if (seen.length < 2) continue;
+      const counts = {};
+      for (const v of seen) counts[v] = (counts[v] || 0) + 1;
+      const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+      if (top.length <= 2 && !/^x$/i.test(top) || c.input !== 'check') c.mark = top === '1' ? 1 : top;
+    }
+
     return {
       id: 'L' + hr + '_' + nc,
       headerRows: [hr, headerEnd],
       nameCol: nc, noCol, cols: [c1, c2],
       parts: parts.map(p => ({ first: p.first, last: p.last, sex: p.sex })),
-      lastRow: parts[parts.length - 1].last,
-      columns: columns.filter(c => c.key),
+      lastRow,
+      columns: cols,
       unknownColumns: columns.filter(c => !c.key).map(c => ({ col: c.col, label: c.label })),
+      found,
     };
+  }
+
+  // Columns the app has no fixed meaning for (GST scores, Test Taken, ...):
+  // they still become input columns, stored under their heading text.
+  function extraMeaning(chain) {
+    const raw = chain.join(' ');
+    const joined = norm(raw);
+    const key = 'x:' + joined.slice(0, 60);
+    const group = chain.length > 1 ? norm(chain[0]) : null;
+    const label = chain.join(' ');
+    let m;
+    if ((m = /(?:<|less than|below)\s*=?\s*(\d+)/i.exec(raw)) && !/>\s*\/?\s*=?\s*\d/.test(raw)) return { key, input: 'cond', op: 'lt', n: +m[1], label, group, conf: 0.8 };
+    if ((m = /(?:>\s*\/?\s*=|>=|≥|at least)\s*(\d+)|(\d+)\s*(?:and above|or more|pataas)/i.exec(raw))) return { key, input: 'cond', op: 'ge', n: +(m[1] || m[2]), label, group, conf: 0.8 };
+    if ((m = />\s*(\d+)/.exec(raw))) return { key, input: 'cond', op: 'ge', n: +m[1] + 1, label, group, conf: 0.8 };
+    if (/\btotal\b/.test(joined)) return { key, input: 'total', label, group, conf: 0.8 };
+    if (/[√✓]|\bcheck\b|\btick\b|\bput (a )?(1|check|x)\b|\bor x\b|\(x\)/i.test(raw)) {
+      const mark = /put (a )?1/i.test(raw) ? 1 : /✓/.test(raw) ? '✓' : /\bx\b/i.test(raw) && !/[√✓]/.test(raw) ? 'X' : '√';
+      return { key, input: 'check', mark, label, group, conf: 0.8 };
+    }
+    if (/score|literal|inferential|applied|critical|\bnumber\b|\bno of\b|\braw\b|%|rate|time|words|miscues|items|points|correct|\bage\b/.test(joined)) {
+      return { key, input: 'number', label, group, conf: 0.75 };
+    }
+    return { key, input: 'text', label, group, conf: 0.6 };
   }
 
   function columnMeaning(chain) {
@@ -239,6 +326,8 @@
     for (const [lvl, re] of LEVEL_WORDS) {
       if (re.test(child) && child.split(' ').length <= 3) return { key: 'a.level', choice: lvl, mark, conf: 0.75 };
     }
+    const extra = chain.length ? extraMeaning(chain) : null;
+    if (extra && (extra.input === 'cond' || extra.input === 'total')) return extra;
     if (chain.length === 1 || child) {
       const hit = bestKey(child, COLUMN) || bestKey(joined, COLUMN);
       if (hit) {
@@ -248,7 +337,7 @@
       if (/^(m|male|boys)$/.test(child)) return { key: 'learner.sex', choice: 'M', mark, conf: 0.6 };
       if (/^(f|female|girls)$/.test(child)) return { key: 'learner.sex', choice: 'F', mark, conf: 0.6 };
     }
-    return { key: null, conf: 0 };
+    return extra || { key: null, conf: 0 };
   }
 
   // ---------- count tables (grade level / school summaries) ----------
@@ -341,6 +430,9 @@
       const blankRe = /_{3,}/g;
       let m, idx = 0, prevEnd = 0;
       while ((m = blankRe.exec(raw))) {
+        const after = raw.slice(m.index + m[0].length);
+        const tick = /^\s*\/?\s*(pre[- ]?test|bosy|beginning)/i.test(after) ? 'BOSY' : /^\s*\/?\s*(post[- ]?test|eosy|end of)/i.test(after) ? 'EOSY' : /^\s*\/?\s*(mid[- ]?year|mosy|middle)/i.test(after) ? 'MOSY' : null;
+        if (tick) { add({ ref: cell.ref, key: 'tick:' + tick, mode: 'blank', blankIndex: idx, conf: 0.85 }); idx++; prevEnd = m.index + m[0].length; continue; }
         const labelTxt = norm(raw.slice(prevEnd, m.index));
         const words = labelTxt.split(' ');
         const cands = [words[words.length - 1], words.slice(-2).join(' '), labelTxt].map(t => bestKey(t, SINGLE));
@@ -362,7 +454,7 @@
       if (sy) add({ ref: cell.ref, key: 'sy', mode: 'find', find: sy[0], conf: 0.9 });
       // (MIDYEAR), PRE-TEST ...
       const pm = PERIOD_RE.exec(raw);
-      if (pm && raw.length > pm[0].length + 2) add({ ref: cell.ref, key: 'period', mode: 'find', find: pm[0], conf: 0.85 });
+      if (pm && raw.length > pm[0].length + 2 && !fields.some(f => f.ref === cell.ref && f.key.startsWith('tick:'))) add({ ref: cell.ref, key: 'period', mode: 'find', find: pm[0], conf: 0.85 });
       // "... READING LEVEL IN FILIPINO" in titles
       const lm = /\b(filipino|english)\b/i.exec(raw);
       if (lm && /report|profile|summary|reading|inventory/.test(n) && raw.length > 20) add({ ref: cell.ref, key: 'language', mode: 'find', find: lm[0], conf: 0.8 });
@@ -378,6 +470,13 @@
           taken.add(t.ref);
         }
         continue;
+      }
+
+      // "School: Ocampo National High School" - label and value in one cell
+      const lv = /^\s*([A-Za-z][^:_]{1,40}?)\s*:\s*(\S.*?)\s*$/.exec(raw);
+      if (lv && !/_{3,}/.test(raw)) {
+        const hit = bestKey(norm(lv[1]), SINGLE, k => k.startsWith('count.') || k.startsWith('learner.'));
+        if (hit) { add({ ref: cell.ref, key: hit.key, mode: 'after', current: lv[2], conf: hit.conf * 0.9 }); taken.add(cell.ref); continue; }
       }
 
       // "SECTION :" / "Assessor:" with a value cell to the right
