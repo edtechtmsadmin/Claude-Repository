@@ -555,6 +555,20 @@
     return null;
   }
 
+  // how much of the form is written in Filipino vs English (header and column words)
+  const FIL_WORDS = /\b(pangalan|paaralan|baitang|seksyon|pangkat|guro|petsa|talaan|pagtatasa|pangkatang|kabuuang|bilang|tamang|sagot|paghihinuha|kritikal|iskor|nakuha|distrito|mag-?aaral|antas|marka|panuto|lagda|inihanda|binigyang)\b/gi;
+  const ENG_WORDS = /\b(name|school|grade|section|teacher|date|record|assessment|total|score|number|correct|responses|literal|inferential|critical|region|department|education|division|district|learners?|level|prepared|noted)\b/gi;
+  function formWording(sheet) {
+    let fil = 0, eng = 0;
+    for (const cell of sheet.cells.values()) {
+      if (cell.type !== 'string') continue;
+      const t = String(cell.value);
+      fil += (t.match(FIL_WORDS) || []).length;
+      eng += (t.match(ENG_WORDS) || []).length;
+    }
+    return { fil, eng };
+  }
+
   // ---------- whole sheet ----------
   function detectSheet(sheet) {
     const lists = findLists(sheet);
@@ -571,11 +585,15 @@
     else if (fields.some(f => f.key === 'learner.name')) kind = 'learner';
 
     let language = null;
-    if (/\bfil/i.test(sheet.name)) language = 'Filipino';
-    else if (/\beng/i.test(sheet.name)) language = 'English';
+    if (/\bfil(ipino)?\b|\bfil\s|^fil|\bfil[-_]/i.test(sheet.name)) language = 'Filipino';
+    else if (/\beng(lish)?\b|^eng|\beng[-_]/i.test(sheet.name)) language = 'English';
     else {
+      // a title that names the language ("... IN FILIPINO") wins; otherwise the wording of the form decides
       const lf = fields.find(f => f.key === 'language' && f.mode === 'find');
+      const words = formWording(sheet);
       if (lf) language = /fil/i.test(lf.find) ? 'Filipino' : 'English';
+      if (words.fil >= 4 && words.fil > words.eng * 1.5) language = 'Filipino';
+      else if (!lf && words.eng >= 4 && words.eng > words.fil * 1.5) language = null; // English wording alone does not say which test it is
     }
     return {
       sheetPath: sheet.path, sheetName: sheet.name, sheetIndex: sheet.index, hidden: sheet.hidden,

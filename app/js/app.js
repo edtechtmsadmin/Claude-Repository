@@ -218,11 +218,14 @@
           <h1>${esc(f.m.sheetName)}</h1>
         </div>
         <div class="wh-actions">
-          <button class="btn primary big" type="button" data-act="${kind === 'learner' ? 'save-all' : 'save-form'}">${saveIcon}${kind === 'learner' ? 'Save a form for every learner' : 'Save filled form'}</button>
+          ${kind === 'learner'
+            ? `<button class="btn primary big" type="button" data-act="save-all">${saveIcon}Save a form for every learner</button>`
+            : `<button class="btn primary big" type="button" data-act="save-file" title="Fills every form in this file and saves it as one Excel file">${saveIcon}Save filled file</button>`}
           ${isDesktop ? '<button class="btn big" type="button" data-act="open-form">Open in Excel to print</button>' : ''}
           <details class="fb-more">
             <summary class="btn big" aria-label="More options">More</summary>
             <div class="fb-menu stack">
+              ${kind !== 'learner' ? '<button class="btn" type="button" data-act="save-form">Save only this form</button>' : ''}
               <label class="field"><span>Printing</span><select id="pg-fit">${options(FIT_OPTIONS, fitVal)}</select></label>
               <label class="field"><span>Orientation</span><select id="pg-orient">${options([['', 'As in the form'], ['portrait', 'Portrait'], ['landscape', 'Landscape']], ui.page.orient || '')}</select></label>
               <label class="field"><span>Paper</span><select id="pg-paper">${options(PAPER, ui.page.paper || '')}</select></label>
@@ -236,7 +239,7 @@
       <div class="controls">
         ${who}
         <div class="pill-field"><span>Period</span>${seg('period', PERIODS, ui.period)}</div>
-        <div class="pill-field"><span>Language</span>${f.m.language ? `<b class="lang-tag">${f.m.language}</b>` : seg('lang', LANGS, ui.lang)}</div>
+        <div class="pill-field" title="The language of this form. Results are kept separately for Filipino and English."><span>Language</span>${seg('lang', LANGS, lang)}</div>
         <span id="save-note" class="muted small"></span>
       </div>
       <div id="pr-warn"></div>`;
@@ -705,6 +708,57 @@
     } catch (e) { toast(e.message || String(e)); }
   }
 
+  /* Fill every form in the file and save it as one workbook, like the
+   * template that was uploaded: class forms with the chosen class, grade
+   * summaries with that class's grade, school summaries with all classes,
+   * each sheet in its own language. */
+  async function saveWholeFile(openAfter) {
+    const btns = $$('[data-act="save-file"],[data-act="open-form"]');
+    btns.forEach(b => { b.disabled = true; });
+    try {
+      const f = currentForm();
+      if (!f) { toast('Upload a form first.'); return; }
+      const t = f.t;
+      const data = await tplData(t.id);
+      if (!data) throw new Error('The form file is missing on this computer. Upload it again.');
+      const cls = currentClass(false);
+      const grade = (f.m.kind === 'grade' && ui.grade) || (cls && cls.grade) || ui.grade;
+      const writesBySheet = {};
+      const skipped = [];
+      let extraPages = 0;
+      for (const m of t.sheets) {
+        if (m.notes || m.hidden) continue;
+        if (m.kind === 'learner') { skipped.push(m.sheetName); continue; }
+        const sheet = data.wb.sheets.find(s => s.path === m.sheetPath);
+        if (!sheet) continue;
+        const ctx = {
+          kind: m.kind, classId: ui.classId, grade, period: ui.period, lang: m.language || ui.lang,
+          date: (state.dates || {})[`${ui.classId}:${ui.period}`] || (m.fields.some(x => x.key === 'date' && x.current) ? '' : todayText()),
+        };
+        const r = Data.buildWrites(m, sheet, state, ctx);
+        if (r.pages.length > 1) extraPages++;
+        const writes = r.pages[0].filter(w => { const c = sheet.cells.get(w.ref); return !(c && c.formula); });
+        if (writes.length) writesBySheet[m.sheetPath] = writes;
+      }
+      const out = await XL.fillWorkbook(data.buf.slice(0), writesBySheet, { type: 'uint8array' });
+      const blob = new Blob([out.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      // same workbook name as the uploaded template (Windows asks before replacing a file)
+      const name = /\.xls[xm]$/i.test(t.fileName) ? t.fileName.replace(/\.xlsm$/i, '.xlsx') : `${t.name}.xlsx`;
+      const notes = [];
+      if (skipped.length) notes.push(`${skipped.join(', ')} ${skipped.length === 1 ? 'is' : 'are'} one-learner forms: save them from ${skipped.length === 1 ? 'its' : 'their'} own tab.`);
+      if (extraPages) notes.push('Some forms have more learners than rows; the extra learners are not in this file. Use “Save only this form” on that tab to get the extra pages.');
+      if (openAfter && window.desktop) {
+        const path = await window.desktop.openInExcel(name.replace(/[–—]/g, '-'), new Uint8Array(await blob.arrayBuffer()));
+        toast(path ? 'Opened in Excel. Press Ctrl+P there to print.' : 'Could not open the file.');
+      } else {
+        const r = await saveBlob(name, blob);
+        if (r.status === 'saved') toast((r.path ? `Saved to ${r.path}. ` : 'Saved the whole file. ') + notes.join(' '));
+      }
+    } catch (e) {
+      toast(e.message || String(e));
+    } finally { btns.forEach(b => { b.disabled = false; }); }
+  }
+
   async function saveForm(openAfter, all) {
     const btns = $$('[data-act="save-form"],[data-act="open-form"],[data-act="save-all"]');
     btns.forEach(b => { b.disabled = true; });
@@ -946,7 +1000,12 @@
     if (segBtn) {
       const name = segBtn.parentElement.dataset.seg, v = segBtn.dataset.v;
       if (name === 'period') ui.period = v;
-      else if (name === 'lang') ui.lang = v;
+      else if (name === 'lang') {
+        // remember the language for this form (the app may have guessed wrong)
+        ui.lang = v;
+        const f = currentForm();
+        if (f) f.m.language = v;
+      }
       else if (name === 'zoom') { ui.zoom = +v; renderMapper(); return; }
       save(); render();
       return;
@@ -1021,8 +1080,9 @@
     } else if (act === 'toggle-preview') {
       ui.preview = !ui.preview; render();
       if (ui.preview) $('#preview').scrollIntoView({ block: 'start', behavior: 'smooth' });
-    } else if (act === 'save-form') saveForm(false);
-    else if (act === 'open-form') saveForm(true);
+    } else if (act === 'save-file') saveWholeFile(false);
+    else if (act === 'save-form') saveForm(false);
+    else if (act === 'open-form') { const f = currentForm(); if (f && f.m.kind === 'learner') saveForm(true); else saveWholeFile(true); }
     else if (act === 'save-all') saveForm(false, true);
     else if (act === 'fill-sheet') {
       ui.form = b.dataset.tpl + ':' + b.dataset.i; ui.view = 'fill'; ui.tplId = null; ui.sel = null; save(); render(); window.scrollTo(0, 0);
