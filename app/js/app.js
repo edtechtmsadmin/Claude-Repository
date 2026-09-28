@@ -236,12 +236,21 @@
     return `
       ${kind === 'learner'
         ? `<button class="btn primary" type="button" data-act="save-all">${saveIcon}Save for every learner</button>`
-        : `<button class="btn primary" type="button" data-act="save-file" title="Fills every form in this file and saves it as one Excel workbook">${saveIcon}Save filled file</button>`}
+        : `<details class="fb-more save-menu">
+            <summary class="btn primary">${saveIcon}Save filled file<span class="caret" aria-hidden="true"></span></summary>
+            <div class="fb-menu save-choices">
+              <button type="button" class="save-choice" data-act="save-file">
+                <b>Whole file</b><span>Every form in one workbook, with the same sheets and file name as the template (${f.t.sheets.filter(usable).length} sheets)</span>
+              </button>
+              <button type="button" class="save-choice" data-act="save-form">
+                <b>Only this form</b><span>Just “${esc(f.m.sheetName)}”, the form on your screen</span>
+              </button>
+            </div>
+          </details>`}
       ${isDesktop ? '<button class="btn" type="button" data-act="open-form" title="Open the filled file in Excel to print">Excel</button>' : ''}
       <details class="fb-more">
         <summary class="btn" aria-label="More options">More</summary>
         <div class="fb-menu stack">
-          ${kind !== 'learner' ? '<button class="btn" type="button" data-act="save-form">Save only this form</button>' : ''}
           <label class="field"><span>Printing</span><select id="pg-fit">${options(FIT_OPTIONS, fitVal)}</select></label>
           <label class="field"><span>Orientation</span><select id="pg-orient">${options([['', 'As in the form'], ['portrait', 'Portrait'], ['landscape', 'Landscape']], ui.page.orient || '')}</select></label>
           <label class="field"><span>Paper</span><select id="pg-paper">${options(PAPER, ui.page.paper || '')}</select></label>

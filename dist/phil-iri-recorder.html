@@ -275,6 +275,16 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent);
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow);
 }
 .fb-menu .btn { justify-content: flex-start; border-radius: var(--r-sm); }
+/* save: whole file or only this form */
+.save-menu .caret { width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); margin-left: 2px; }
+.save-choices { display: flex; flex-direction: column; gap: 6px; width: 340px; padding: 8px; }
+.save-choice {
+  text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r-sm); padding: 10px 12px; cursor: pointer;
+  display: flex; flex-direction: column; gap: 2px; color: var(--ink);
+}
+.save-choice b { font-weight: 600; }
+.save-choice span { font-size: .82rem; color: var(--muted); }
+.save-choice:hover, .save-choice:focus-visible { border-color: var(--accent); background: var(--accent-soft); }
 
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
 .stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 16px; display: flex; flex-direction: column; gap: 2px; position: relative; overflow: hidden; }
@@ -365,6 +375,73 @@ td.mk-sel { outline: 3px solid #2552b8 !important; outline-offset: -3px; }
 
 @media (prefers-reduced-motion: no-preference) {
   .btn, .tab, .seg button { transition: background-color .15s, border-color .15s, color .15s, box-shadow .2s; }
+}
+
+/* ---------- glass: frosted panels over a soft colour wash ---------- */
+:root {
+  --glass: rgba(255, 255, 255, .58);
+  --glass-strong: rgba(255, 255, 255, .78);
+  --glass-solid: rgba(255, 255, 255, .94);
+  --glass-edge: rgba(255, 255, 255, .75);
+  --glass-line: rgba(37, 82, 184, .12);
+  --glass-shine: inset 0 1px 0 rgba(255, 255, 255, .85);
+  --glass-shadow: 0 8px 32px rgba(31, 52, 110, .10), 0 1px 2px rgba(31, 52, 110, .06);
+  --glass-blur: blur(18px) saturate(170%);
+  --wash-1: rgba(37, 82, 184, .20);
+  --wash-2: rgba(243, 195, 59, .26);
+  --wash-3: rgba(29, 170, 160, .16);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --glass: rgba(26, 33, 47, .55); --glass-strong: rgba(28, 36, 51, .74); --glass-solid: rgba(24, 31, 44, .95);
+    --glass-edge: rgba(255, 255, 255, .10); --glass-line: rgba(255, 255, 255, .08); --glass-shine: inset 0 1px 0 rgba(255, 255, 255, .06);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, .35); --wash-1: rgba(90, 130, 255, .22); --wash-2: rgba(243, 195, 59, .10); --wash-3: rgba(40, 190, 170, .12);
+  }
+}
+:root[data-theme="dark"] {
+  --glass: rgba(26, 33, 47, .55); --glass-strong: rgba(28, 36, 51, .74); --glass-solid: rgba(24, 31, 44, .95);
+  --glass-edge: rgba(255, 255, 255, .10); --glass-line: rgba(255, 255, 255, .08); --glass-shine: inset 0 1px 0 rgba(255, 255, 255, .06);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, .35); --wash-1: rgba(90, 130, 255, .22); --wash-2: rgba(243, 195, 59, .10); --wash-3: rgba(40, 190, 170, .12);
+}
+body {
+  background:
+    radial-gradient(900px 600px at 8% -10%, var(--wash-1), transparent 60%),
+    radial-gradient(700px 520px at 100% 10%, var(--wash-2), transparent 60%),
+    radial-gradient(800px 600px at 50% 110%, var(--wash-3), transparent 60%),
+    var(--ground);
+  background-attachment: fixed;
+}
+.topbar, .card, .controls, .panel, .stat, .steps li, .drop, .tab:not([aria-selected="true"]) {
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  border-color: var(--glass-edge);
+  box-shadow: var(--glass-shine), var(--glass-shadow);
+}
+.topbar { background: var(--glass-strong); border-bottom-color: var(--glass-line); box-shadow: var(--glass-shine), 0 4px 24px rgba(31, 52, 110, .08); }
+.card .card, .card .panel { background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; border-color: var(--glass-line); }
+.tab:not([aria-selected="true"]) { box-shadow: var(--glass-shine), 0 2px 10px rgba(31, 52, 110, .08); }
+.tab:not([aria-selected="true"]):hover { background: var(--accent-soft); border-color: var(--accent); }
+.drop { border-color: var(--line-strong); }
+.drop:hover, .drop.over { background: color-mix(in srgb, var(--accent-soft) 75%, transparent); border-color: var(--accent); }
+/* menus open inside the frosted top bar, so they carry their own near-solid glass */
+.fb-menu { background: var(--glass-solid); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border-color: var(--glass-edge); box-shadow: var(--glass-shine), 0 16px 40px rgba(20, 33, 61, .18); }
+.save-choice { background: color-mix(in srgb, var(--surface) 70%, transparent); }
+/* small insets read as tinted glass rather than grey blocks */
+.seg, .kind-tag, .sc:not(.i):not(.n):not(.f), .topbar-files > * { background: color-mix(in srgb, var(--surface-3) 60%, transparent); }
+.seg button[aria-pressed="true"] { background: var(--glass-solid); }
+.btn:not(.primary):not(.danger) { background: color-mix(in srgb, var(--surface) 72%, transparent); }
+table.grid th { background: var(--glass-solid); }
+table.grid tr.sep td, table.grid.entry th.grp { background: color-mix(in srgb, var(--surface-3) 65%, transparent); }
+table.grid.entry td.auto { background: color-mix(in srgb, var(--surface-2) 60%, transparent); }
+input, select, textarea { background-color: color-mix(in srgb, var(--surface) 80%, transparent); }
+/* browsers without backdrop blur keep solid panels so text stays readable */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .topbar, .card, .controls, .panel, .stat, .steps li, .drop, .tab:not([aria-selected="true"]), .fb-menu { background: var(--surface); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .topbar, .card, .controls, .panel, .stat, .steps li, .drop, .tab:not([aria-selected="true"]), .fb-menu {
+    background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
 }
 
 </style>
@@ -2892,12 +2969,21 @@ window.SAMPLE_TEMPLATES = {
     return `
       ${kind === 'learner'
         ? `<button class="btn primary" type="button" data-act="save-all">${saveIcon}Save for every learner</button>`
-        : `<button class="btn primary" type="button" data-act="save-file" title="Fills every form in this file and saves it as one Excel workbook">${saveIcon}Save filled file</button>`}
+        : `<details class="fb-more save-menu">
+            <summary class="btn primary">${saveIcon}Save filled file<span class="caret" aria-hidden="true"></span></summary>
+            <div class="fb-menu save-choices">
+              <button type="button" class="save-choice" data-act="save-file">
+                <b>Whole file</b><span>Every form in one workbook, with the same sheets and file name as the template (${f.t.sheets.filter(usable).length} sheets)</span>
+              </button>
+              <button type="button" class="save-choice" data-act="save-form">
+                <b>Only this form</b><span>Just “${esc(f.m.sheetName)}”, the form on your screen</span>
+              </button>
+            </div>
+          </details>`}
       ${isDesktop ? '<button class="btn" type="button" data-act="open-form" title="Open the filled file in Excel to print">Excel</button>' : ''}
       <details class="fb-more">
         <summary class="btn" aria-label="More options">More</summary>
         <div class="fb-menu stack">
-          ${kind !== 'learner' ? '<button class="btn" type="button" data-act="save-form">Save only this form</button>' : ''}
           <label class="field"><span>Printing</span><select id="pg-fit">${options(FIT_OPTIONS, fitVal)}</select></label>
           <label class="field"><span>Orientation</span><select id="pg-orient">${options([['', 'As in the form'], ['portrait', 'Portrait'], ['landscape', 'Landscape']], ui.page.orient || '')}</select></label>
           <label class="field"><span>Paper</span><select id="pg-paper">${options(PAPER, ui.page.paper || '')}</select></label>
