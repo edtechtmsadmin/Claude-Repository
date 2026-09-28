@@ -301,6 +301,8 @@
       margins: { left: num(pm, 'left', 0.7), right: num(pm, 'right', 0.7), top: num(pm, 'top', 0.75), bottom: num(pm, 'bottom', 0.75) },
       hCenter: !!po && po.getAttribute('horizontalCentered') === '1',
       vCenter: !!po && po.getAttribute('verticalCentered') === '1',
+      // the template maker chose print settings (paper, scale, fit, orientation)
+      hasSetup: !!(ps && ['paperSize', 'scale', 'fitToWidth', 'fitToHeight', 'orientation'].some(a => ps.getAttribute(a) != null)) || !!spr,
       rowBreaks: brk('rowBreaks'),
       colBreaks: brk('colBreaks'),
     };
@@ -429,13 +431,36 @@
    * opts.locked: Set of refs that stay read-only (worked out by the app)
    * opts.toggles: Set of refs that switch on/off with a click (tick columns)
    */
+  /* What Excel prints when no print area is set: the cells that show
+   * something (a value, a border, a fill), merged boxes and pictures.
+   * Cells that only carry a font or number format are ignored. */
   function printArea(sheet) {
-    return sheet.printArea || { r1: 1, c1: 1, r2: Math.max(sheet.maxR, 1), c2: Math.max(sheet.maxC, 1) };
+    if (sheet.printArea) return sheet.printArea;
+    if (sheet._area) return sheet._area;
+    let r2 = 1, c2 = 1;
+    const visible = (st) => st && (st.fill || (st.border && (st.border.left || st.border.right || st.border.top || st.border.bottom)));
+    for (const cell of sheet.cells.values()) {
+      const shows = (cell.value != null && cell.value !== '') || cell.formula || visible(sheet.styles.xfs[cell.s]);
+      if (!shows) continue;
+      if (cell.r > r2) r2 = cell.r;
+      if (cell.c > c2) c2 = cell.c;
+    }
+    for (const m of sheet.merges) {
+      const tl = sheet.cells.get(makeRef(m.r1, m.c1));
+      if (!tl || (tl.value == null && !visible(sheet.styles.xfs[tl.s]))) continue;
+      if (m.r2 > r2) r2 = m.r2;
+      if (m.c2 > c2) c2 = m.c2;
+    }
+    for (const im of sheet.images) {
+      const to = im.to || im.from;
+      if (to) { if (to.row + 1 > r2) r2 = to.row + 1; if (to.col + 1 > c2) c2 = to.col + 1; }
+    }
+    return (sheet._area = { r1: 1, c1: 1, r2, c2 });
   }
 
   /* opts.range: {r1,c1,r2,c2} draws only that part (one printed page) */
   function renderSheet(sheet, opts = {}) {
-    const area = opts.range || Object.assign({}, printArea(sheet), { r1: 1, c1: 1 });
+    const area = opts.range || Object.assign({}, opts.full ? { r2: sheet.maxR, c2: sheet.maxC } : printArea(sheet), { r1: 1, c1: 1 });
     const r1 = area.r1, c1 = area.c1;
     const r2 = Math.min(area.r2, r1 + 600), c2 = Math.min(area.c2, c1 + 100);
     const marks = opts.marks || {};
@@ -603,6 +628,7 @@
   function effectivePage(sheet, override) {
     const o = Object.assign({}, override);
     if (o.fit === true) o.fit = 'width';
+    if (o.fit === 'auto' && sheet.page.hasSetup && !o.orientation && !o.paper) o.fit = null; // keep the form's own print settings
     if (o.fit === 'auto') {
       const lay = paginate(sheet, Object.assign({}, o, { fit: 'width' }));
       o.fit = 'width';

@@ -232,7 +232,7 @@
         ${kind === 'class' ? `<button class="btn quiet" type="button" data-act="toggle-table">${ui.tableView ? 'Type on the form instead' : 'Type in a table instead'}</button>` : ''}
         <details class="pagesetup"><summary>Page setup</summary>
           <div class="stack" style="margin-top:8px">
-            <label class="field"><span>Size on paper</span><select id="pg-fit">${options([['auto', 'Automatic (recommended)'], ['page', 'Whole form on one page'], ['width', 'Fit to page width'], ['none', 'As set in the form']], ui.page.fit === false ? 'none' : ui.page.fit === true || ui.page.fit == null ? 'auto' : ui.page.fit)}</select></label>
+            <label class="field"><span>Size on paper</span><select id="pg-fit">${options([['auto', 'Automatic: the form’s own settings if it has them'], ['page', 'Whole form on one page'], ['width', 'Fit to page width'], ['none', 'As set in the form']], ui.page.fit === false ? 'none' : ui.page.fit === true || ui.page.fit == null ? 'auto' : ui.page.fit)}</select></label>
             <label class="field"><span>Orientation</span><select id="pg-orient">${options([['', 'As in form'], ['portrait', 'Portrait'], ['landscape', 'Landscape']], ui.page.orient ?? ((kind === 'grade' || kind === 'school') ? 'landscape' : ''))}</select></label>
             <label class="field"><span>Paper</span><select id="pg-paper">${options(PAPER, ui.page.paper || '')}</select></label>
           </div>
@@ -269,7 +269,7 @@
       if (formMap[ref].lid && !(ref in values)) values[ref] = '';
     }
     for (const ref in edits) marks[ref] = 'mk-typed';
-    for (const ref in auto) if (!(ref in edits)) marks[ref] = 'mk-fill';
+    for (const ref in auto) if (!(ref in edits) && auto[ref] !== '') marks[ref] = 'mk-fill';
     const out = XL.renderPages(sheet, XL.effectivePage(sheet, pageSetup(f)), { editable: true, values, marks, locked, toggles });
     box.innerHTML = pagesNote(out.count) + out.html;
     box.dataset.key = f.key;
