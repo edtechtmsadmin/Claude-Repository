@@ -141,9 +141,11 @@
     $('#rail-foot').textContent = isDesktop ? 'Your work is saved on this computer automatically.' : 'Test version: your work is kept in this browser. Save a backup in Settings.';
     const v = $('#view');
     if (ui.view === 'adjust' && ui.tplId) { v.innerHTML = '<div class="empty">Opening…</div>'; renderMapper(); return; }
+    document.body.classList.remove('fill-view');
     if (ui.view === 'settings') { v.innerHTML = viewSettings() + viewClasses(); return; }
     ui.view = 'fill';
     v.innerHTML = viewFill();
+    document.body.classList.toggle('fill-view', !!currentForm());
     const f = currentForm();
     if (f && (f.m.kind === 'none' || (f.m.kind === 'learner' && ui.learnerId) || (f.m.kind === 'class' && !ui.tableView))) renderFormView(f);
     else if (ui.preview || (f && f.m.kind !== 'class')) refreshPreview();
@@ -175,73 +177,73 @@
         ${uploadBox(true)}`;
     }
     const tabs = allForms().filter(x => x.t.id === f.t.id);
-    const fileBar = `
-      <div class="filebar">
-        <label class="field grow"><span>Form file</span><select id="file-pick">${options(state.templates.filter(t => t.sheets.some(usable)).map(t => [t.id, t.name]).concat([['__upload', '+ Upload another form…']]), f.t.id)}</select></label>
-        <input type="file" id="tpl-file" hidden accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
-      </div>
-      ${tabs.length > 1 ? `<div class="tabs" role="tablist">${tabs.map(x => `<button type="button" role="tab" class="tab" data-act="tab" data-key="${x.key}" aria-selected="${x.key === f.key}">${esc(x.m.sheetName)}</button>`).join('')}</div>` : ''}`;
     const kind = f.m.kind;
     const lang = formLang(f);
+    const sel = (id, label, opts, val) => `<select id="${id}" class="fb-sel" aria-label="${label}" title="${label}">${options(opts, val)}</select>`;
     let who = '';
-    if (kind === 'class' || kind === 'learner') {
+    if (kind === 'class' || kind === 'learner' || kind === 'none') {
       const cls = currentClass(true);
-      who = `<label class="field"><span>Class</span><select id="fill-class">${options(syClasses().map(c => [c.id, className(c)]).concat([['__new', '+ Add another class']]), cls.id)}</select></label>`;
+      who = sel('fill-class', 'Class', syClasses().map(c => [c.id, className(c)]).concat([['__new', '+ Add another class']]), cls.id);
       if (kind === 'learner') {
         const ls = Data.sortLearners(cls.learners);
         if (!ls.find(l => l.id === ui.learnerId)) ui.learnerId = ls[0] ? ls[0].id : null;
-        who += `<label class="field"><span>Learner</span><select id="fill-learner">${options(ls.map(l => [l.id, Data.fullName(l, state.settings)]).concat([['__new', '+ Add a learner']]), ui.learnerId)}</select></label>
-          <label class="field" id="new-learner-wrap" hidden><span>New learner’s name</span><input type="text" id="new-learner" placeholder="DELA CRUZ, Juan P."></label>`;
+        who += sel('fill-learner', 'Learner', ls.map(l => [l.id, Data.fullName(l, state.settings)]).concat([['__new', '+ Add a learner']]), ui.learnerId)
+          + `<input type="text" id="new-learner" class="fb-sel" hidden placeholder="New learner: DELA CRUZ, Juan P." aria-label="New learner’s name">`;
       }
     } else if (kind === 'grade') {
-      const grades = [...new Set(syClasses().map(c => String(c.grade)).filter(Boolean))].sort((a, b) => a - b);
+      const grades = [...new Set(syClasses().map(c => String(c.grade)).filter(Boolean))].sort((a2, b2) => a2 - b2);
       if (!grades.includes(String(ui.grade))) ui.grade = grades[0] || '';
-      who = `<label class="field"><span>Grade</span><select id="fill-grade">${options(grades.length ? grades.map(g => [g, 'Grade ' + g]) : [['', 'No classes yet']], ui.grade)}</select></label>`;
+      who = sel('fill-grade', 'Grade', grades.length ? grades.map(g => [g, 'Grade ' + g]) : [['', 'No classes yet']], ui.grade);
     }
-    if (kind === 'none') {
-      const cls = currentClass(true);
-      who = `<label class="field"><span>Class</span><select id="fill-class">${options(syClasses().map(c => [c.id, className(c)]).concat([['__new', '+ Add another class']]), cls.id)}</select></label>`;
-    }
-    const top = `
-      <div class="panel toolbar">
-        ${who}
-        <div class="field"><span>Period</span>${seg('period', PERIODS, ui.period, { BOSY: 'BOSY', MOSY: 'MOSY', EOSY: 'EOSY' })}</div>
-        <div class="field"><span>Language</span>${f.m.language ? `<span class="chip ok big">${f.m.language}</span>` : seg('lang', LANGS, ui.lang)}</div>
-      </div>`;
-    let body = '';
-    if (kind === 'learner' && !ui.learnerId) body = `<div class="notice ok"><b>One page per learner.</b> Add a learner above (or fill in a class form first), then type on the form.</div>`;
-    else if (kind === 'none' || kind === 'learner') body = `<div class="notice ok"><b>Type straight on the form.</b> Click any box below and type. Press Enter to go down, Tab to go right. What you type is kept and printed exactly there.</div>
-      <div class="formview-wrap" id="formview"><div class="empty">Opening the form…</div></div>`;
-    else if (kind === 'class' && ui.tableView) body = fillClass(f, lang);
-    else if (kind === 'class') body = foundBanner(f) + `<div class="notice ok"><b>Type straight on the form.</b> Type a learner’s name on an empty row to add them, then type the scores beside it. Click a tick box to mark it. Totals and ticks that the form works out fill in by themselves. Enter goes down, Tab goes right.</div>
-      <div class="formview-wrap" id="formview"><div class="empty">Opening the form…</div></div>`;
-    else body = `<div class="panel stack"><h2>${kind === 'grade' ? 'Filled in automatically from your sections' : 'Filled in automatically from all classes'}</h2>
-      <p class="muted">This summary counts learners from the class forms you have filled in for ${esc(PERIOD_LABEL[ui.period])}, ${esc(lang)}. To include other teachers’ sections, use <b>Settings › Add a colleague’s classes</b>.</p></div>${detailsPanel(f)}`;
+    const fitVal = ui.page.fit === false ? 'none' : ui.page.fit === true || ui.page.fit == null ? 'auto' : ui.page.fit;
     const formMode = kind === 'none' || kind === 'learner' || (kind === 'class' && !ui.tableView);
     const preview = formMode ? false : kind === 'class' ? ui.preview : true;
-    return `
-      ${fileBar}
-      ${top}
-      ${body}
-      <div class="savebar">
-        <button class="btn primary" type="button" data-act="save-form">Save as Excel file</button>
-        ${isDesktop ? '<button class="btn" type="button" data-act="open-form">Open in Excel to print</button>' : ''}
-        ${kind === 'learner' ? '<button class="btn" type="button" data-act="save-all">Save all learners (.zip)</button>' : ''}
-        ${canPrint ? '<button class="btn" type="button" data-act="print-form">Print</button>' : ''}
-        ${kind === 'class' && ui.tableView ? `<button class="btn" type="button" data-act="toggle-preview">${ui.preview ? 'Hide printout' : 'See how it prints'}</button>` : ''}
-        ${kind === 'class' ? `<button class="btn quiet" type="button" data-act="toggle-table">${ui.tableView ? 'Type on the form instead' : 'Type in a table instead'}</button>` : ''}
-        <details class="pagesetup"><summary>Page setup</summary>
-          <div class="stack" style="margin-top:8px">
-            <label class="field"><span>Size on paper</span><select id="pg-fit">${options([['auto', 'Automatic: the form’s own settings if it has them'], ['page', 'Whole form on one page'], ['width', 'Fit to page width'], ['none', 'As set in the form']], ui.page.fit === false ? 'none' : ui.page.fit === true || ui.page.fit == null ? 'auto' : ui.page.fit)}</select></label>
-            <label class="field"><span>Orientation</span><select id="pg-orient">${options([['', 'As in form'], ['portrait', 'Portrait'], ['landscape', 'Landscape']], ui.page.orient ?? ((kind === 'grade' || kind === 'school') ? 'landscape' : ''))}</select></label>
-            <label class="field"><span>Paper</span><select id="pg-paper">${options(PAPER, ui.page.paper || '')}</select></label>
+    const bar = `
+      <div class="formbar">
+        <div class="fb-row">
+          <select id="file-pick" class="fb-sel fb-file" aria-label="Form file" title="Form file">${options(state.templates.filter(t => t.sheets.some(usable)).map(t => [t.id, t.name]).concat([['__upload', '+ Upload another form…']]), f.t.id)}</select>
+          <input type="file" id="tpl-file" hidden accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+          ${who}
+          ${seg('period', PERIODS, ui.period)}
+          ${f.m.language ? `<span class="chip ok" title="Language of this form">${f.m.language}</span>` : seg('lang', LANGS, ui.lang)}
+          <span class="fb-grow"></span>
+          <div class="seg zoom" role="group" aria-label="Zoom">
+            <button type="button" data-act="zoom-out" title="Smaller">−</button>
+            <button type="button" data-act="zoom-fit" aria-pressed="${ui.fz === 'fit' || ui.fz == null}" title="Fit the page to the screen width">Fit</button>
+            <button type="button" data-act="zoom-in" title="Bigger">+</button>
           </div>
-        </details>
-        <span class="muted" id="save-note"></span>
-      </div>
+          <button class="btn primary" type="button" data-act="save-form">Save Excel</button>
+          ${canPrint ? '<button class="btn" type="button" data-act="print-form">Print</button>' : ''}
+          ${isDesktop ? '<button class="btn" type="button" data-act="open-form" title="Open the filled file in Excel">Excel</button>' : ''}
+          <details class="fb-more">
+            <summary class="btn">More</summary>
+            <div class="fb-menu stack">
+              <label class="field"><span>Size on paper</span><select id="pg-fit">${options([['auto', 'Automatic: the form’s own settings'], ['page', 'Whole form on one page'], ['width', 'Fit to page width'], ['none', 'As set in the form']], fitVal)}</select></label>
+              <label class="field"><span>Orientation</span><select id="pg-orient">${options([['', 'As in form'], ['portrait', 'Portrait'], ['landscape', 'Landscape']], ui.page.orient ?? ((kind === 'grade' || kind === 'school') ? 'landscape' : ''))}</select></label>
+              <label class="field"><span>Paper</span><select id="pg-paper">${options(PAPER, ui.page.paper || '')}</select></label>
+              ${kind === 'learner' ? '<button class="btn" type="button" data-act="save-all">Save all learners (.zip)</button>' : ''}
+              ${kind === 'class' ? `<button class="btn" type="button" data-act="toggle-table">${ui.tableView ? 'Type on the form' : 'Type in a table instead'}</button>` : ''}
+              ${kind === 'class' && ui.tableView ? `<button class="btn" type="button" data-act="toggle-preview">${ui.preview ? 'Hide printout' : 'Show printout'}</button>` : ''}
+              <button class="btn" type="button" data-act="open-sheet" data-tpl="${f.t.id}" data-i="${f.i}">Adjust this form</button>
+              <button class="btn" type="button" data-act="go-settings">Settings</button>
+              <button class="btn danger" type="button" data-act="del-tpl" data-tpl="${f.t.id}">Remove this file</button>
+            </div>
+          </details>
+        </div>
+        ${tabs.length > 1 ? `<div class="tabs" role="tablist">${tabs.map(x => `<button type="button" role="tab" class="tab" data-act="tab" data-key="${x.key}" aria-selected="${x.key === f.key}">${esc(x.m.sheetName)}</button>`).join('')}</div>` : ''}
+      </div>`;
+    const hint = kind === 'class' && !ui.tableView ? 'Type a name on an empty row to add a learner · click a tick box to mark it · totals fill in by themselves · Enter goes down, Tab goes right'
+      : 'Click any box on the form and type · Enter goes down, Tab goes right';
+    let body = '';
+    if (kind === 'learner' && !ui.learnerId) body = `<div class="notice ok"><b>One page per learner.</b> Choose <b>+ Add a learner</b> in the bar above, then type on the form.</div>`;
+    else if (formMode) body = foundBanner(f) + `<p class="fb-hint">${hint}<span id="save-note"></span></p><div class="formview-wrap" id="formview"><div class="empty">Opening the form…</div></div>`;
+    else if (kind === 'class') body = fillClass(f, lang);
+    else body = `<p class="fb-hint">${kind === 'grade' ? 'Filled in automatically from your sections' : 'Filled in automatically from all classes'} for ${esc(PERIOD_LABEL[ui.period])}, ${esc(lang)}. Other teachers’ sections: More › Settings › Add a colleague’s classes.<span id="save-note"></span></p>`;
+    return `
+      ${bar}
       <div id="pr-warn"></div>
-      <div class="preview-wrap" id="preview"${preview ? '' : ' hidden'}><div class="empty">Preparing preview…</div></div>
-      <p class="muted small adjust-link">Something landing in the wrong place? <button class="btn quiet small" type="button" data-act="open-sheet" data-tpl="${f.t.id}" data-i="${f.i}">Adjust this form</button> · <button class="btn quiet small danger" type="button" data-act="del-tpl" data-tpl="${f.t.id}">Remove this file</button></p>`;
+      ${body}
+      <div class="preview-wrap" id="preview"${preview ? '' : ' hidden'}><div class="empty">Preparing preview…</div></div>`;
   }
 
   // ---------- typing straight on the form ----------
@@ -598,9 +600,14 @@
     if (!pages) return;
     const page = pages.querySelector('.xl-page');
     const w = page ? page.offsetWidth : pages.scrollWidth;
-    const avail = box.clientWidth - 34;
-    pages.style.zoom = w && avail > 0 && w > avail ? Math.max(0.3, avail / w).toFixed(3) : '';
+    const avail = box.clientWidth - 24;
+    const fit = w && avail > 0 ? Math.min(2.5, Math.max(0.3, avail / w)) : 1;
+    const z = ui.fz == null || ui.fz === 'fit' ? fit : ui.fz;
+    ui.zoomNow = z;
+    pages.style.zoom = z.toFixed(3);
   }
+  function applyZoomAll() { for (const id of ['formview', 'preview']) { const b = document.getElementById(id); if (b && !b.hidden) fitZoom(b); } }
+  window.addEventListener('resize', () => { clearTimeout(applyZoomAll.t); applyZoomAll.t = setTimeout(applyZoomAll, 150); });
   function pagesNote(n) { return `<p class="pages-note">${n === 1 ? 'Prints on 1 page.' : `Prints on ${n} pages. The gaps show where each page ends.`}</p>`; }
 
   let previewSeq = 0;
@@ -886,7 +893,7 @@
   // ================= events =================
   document.addEventListener('click', async (e) => {
 
-    const segBtn = e.target.closest('.seg button');
+    const segBtn = e.target.closest('.seg[data-seg] button');
     if (segBtn) {
       const name = segBtn.parentElement.dataset.seg, v = segBtn.dataset.v;
       if (name === 'period') ui.period = v;
@@ -920,6 +927,7 @@
     if (td) { ui.sel = td.dataset.ref; renderMapper(); return; }
 
     const b = e.target.closest('[data-act]');
+    if (!e.target.closest('.fb-more')) $$('.fb-more[open]').forEach(d => d.removeAttribute('open'));
     if (!b) return;
     const act = b.dataset.act;
 
@@ -952,6 +960,11 @@
       const lid = b.closest('tr').dataset.lid;
       for (const c of state.classes) c.learners = c.learners.filter(l => l.id !== lid);
       delete state.results[lid]; save(); render();
+    } else if (act === 'zoom-in' || act === 'zoom-out' || act === 'zoom-fit') {
+      if (act === 'zoom-fit') ui.fz = 'fit';
+      else ui.fz = Math.min(3, Math.max(0.3, (ui.zoomNow || 1) * (act === 'zoom-in' ? 1.15 : 1 / 1.15)));
+      $$('[data-act="zoom-fit"]').forEach(x => x.setAttribute('aria-pressed', ui.fz === 'fit'));
+      applyZoomAll();
     } else if (act === 'toggle-table') {
       ui.tableView = !ui.tableView; ui.preview = !ui.tableView ? false : true; render();
     } else if (act === 'print-form') {
@@ -1048,7 +1061,7 @@
     }
     if (t.id === 'fill-grade') { ui.grade = t.value; save(); render(); return; }
     if (t.id === 'fill-learner') {
-      if (t.value === '__new') { $('#new-learner-wrap').hidden = false; $('#new-learner').focus(); t.value = ui.learnerId || ''; return; }
+      if (t.value === '__new') { $('#new-learner').hidden = false; $('#new-learner').focus(); t.value = ui.learnerId || ''; return; }
       ui.learnerId = t.value; save(); render(); return;
     }
     if (t.id === 'new-learner' && t.value.trim()) { const [l] = addLearners([t.value]); ui.learnerId = l.id; save(); render(); return; }
