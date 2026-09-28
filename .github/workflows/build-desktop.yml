@@ -1,13 +1,9 @@
 name: Build Windows app
 
+# Runs only when started by hand (Actions tab › Build Windows app › Run workflow).
+# Automatic builds on every push filled the GitHub storage (about 188 MB each).
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - "app/**"
-      - "electron/**"
-      - "package.json"
-      - ".github/workflows/build-desktop.yml"
 
 jobs:
   windows:
@@ -24,3 +20,4 @@ jobs:
           name: Phil-IRI-Recorder-Windows
           path: dist-electron/*.exe
           if-no-files-found: error
+          retention-days: 7
