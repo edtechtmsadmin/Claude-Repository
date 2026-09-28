@@ -312,6 +312,23 @@ td.mk-fill { box-shadow: inset 0 0 0 999px rgba(31, 95, 191, .10); }
   .nav-item, .btn, .class-item { transition: background-color .15s, border-color .15s, box-shadow .15s; }
 }
 
+/* tick boxes on the form */
+#formview .xl-toggle { cursor: pointer; min-height: 1em; outline: none; }
+#formview td:has(.xl-toggle):hover { box-shadow: inset 0 0 0 999px rgba(29, 107, 87, .12); }
+
+/* printing from the app: only the pages */
+#print-root { display: none; }
+@media print {
+  body > *:not(#print-root) { display: none !important; }
+  #print-root { display: block; }
+  #print-root .xl-pages { display: block; padding: 0; zoom: 1 !important; }
+  #print-root .xl-page { box-shadow: none; break-after: page; margin: 0; }
+  #print-root .xl-page:last-child { break-after: auto; }
+  #print-root .xl-page-no { display: none; }
+  html, body { background: #fff !important; }
+  :root { padding: 0 !important; }
+}
+
 </style>
 </head>
 <body>
@@ -779,6 +796,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
    * opts.marks: {ref: className} to highlight cells (mapping view)
    * opts.values: {ref: text} to show pending values without saving
    * opts.editable: let the user type into every cell that is not a formula
+   * opts.locked: Set of refs that stay read-only (worked out by the app)
+   * opts.toggles: Set of refs that switch on/off with a click (tick columns)
    */
   function printArea(sheet) {
     return sheet.printArea || { r1: 1, c1: 1, r2: Math.max(sheet.maxR, 1), c2: Math.max(sheet.maxC, 1) };
@@ -855,8 +874,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         const cls = marks[ref] ? ` class="${marks[ref]}"` : '';
         const tip = opts.titles && opts.titles[ref] ? ` title="${esc(opts.titles[ref])}"` : '';
         const vert = st && st.rotate === 255 ? ' xl-vert' : '';
-        const editable = opts.editable && !cont && !(cell && cell.formula);
-        html += `<td${cont ? '' : ` data-ref="${ref}"`}${rs > 1 ? ` rowspan="${rs}"` : ''}${cs > 1 ? ` colspan="${cs}"` : ''}${cls}${tip} style="${css.join(';')}"><div class="xl-c${st && st.wrap ? ' xl-wrap' : ''}${vert}"${editable ? ' contenteditable="true" spellcheck="false"' : ''}>${esc(txt)}</div></td>`;
+        const locked = opts.locked && opts.locked.has(ref);
+        const toggle = opts.toggles && opts.toggles.has(ref);
+        const editable = opts.editable && !cont && !(cell && cell.formula) && !locked && !toggle;
+        const inner = toggle ? ' tabindex="0" role="checkbox"' : editable ? ' contenteditable="true" spellcheck="false"' : '';
+        html += `<td${cont ? '' : ` data-ref="${ref}"`}${rs > 1 ? ` rowspan="${rs}"` : ''}${cs > 1 ? ` colspan="${cs}"` : ''}${cls}${tip} style="${css.join(';')}"><div class="xl-c${st && st.wrap ? ' xl-wrap' : ''}${vert}${toggle ? ' xl-toggle' : ''}"${inner}>${esc(txt)}</div></td>`;
       }
       html += '</tr>';
     }
@@ -2435,6 +2457,8 @@ window.SAMPLE_TEMPLATES = {
   const PERIOD_LABEL = { BOSY: 'BOSY (Pre-test)', MOSY: 'MOSY (Midyear)', EOSY: 'EOSY (Post-test)' };
   const PAPER = [['', 'As in template'], ['9', 'A4'], ['1', 'Letter (8.5×11 in)'], ['14', 'Long / Folio (8.5×13 in)'], ['5', 'Legal (8.5×14 in)']];
   const isDesktop = !!window.desktop;
+  // printing from the page works in the desktop app and in a normal browser, not inside the Claude viewer
+  const canPrint = isDesktop || !(window.claude && typeof window.claude.use === 'function');
 
   let state = Data.emptyState();
   const tplCache = new Map();   // template id -> {buf, wb}
@@ -2564,7 +2588,7 @@ window.SAMPLE_TEMPLATES = {
     ui.view = 'fill';
     v.innerHTML = viewFill();
     const f = currentForm();
-    if (f && (f.m.kind === 'none' || (f.m.kind === 'learner' && ui.learnerId))) renderFormView(f);
+    if (f && (f.m.kind === 'none' || (f.m.kind === 'learner' && ui.learnerId) || (f.m.kind === 'class' && !ui.tableView))) renderFormView(f);
     else if (ui.preview || (f && f.m.kind !== 'class')) refreshPreview();
   }
 
@@ -2631,10 +2655,13 @@ window.SAMPLE_TEMPLATES = {
     if (kind === 'learner' && !ui.learnerId) body = `<div class="notice ok"><b>One page per learner.</b> Add a learner above (or fill in a class form first), then type on the form.</div>`;
     else if (kind === 'none' || kind === 'learner') body = `<div class="notice ok"><b>Type straight on the form.</b> Click any box below and type. Press Enter to go down, Tab to go right. What you type is kept and printed exactly there.</div>
       <div class="formview-wrap" id="formview"><div class="empty">Opening the form…</div></div>`;
-    else if (kind === 'class') body = fillClass(f, lang);
+    else if (kind === 'class' && ui.tableView) body = fillClass(f, lang);
+    else if (kind === 'class') body = foundBanner(f) + `<div class="notice ok"><b>Type straight on the form.</b> Type a learner’s name on an empty row to add them, then type the scores beside it. Click a tick box to mark it. Totals and ticks that the form works out fill in by themselves. Enter goes down, Tab goes right.</div>
+      <div class="formview-wrap" id="formview"><div class="empty">Opening the form…</div></div>`;
     else body = `<div class="panel stack"><h2>${kind === 'grade' ? 'Filled in automatically from your sections' : 'Filled in automatically from all classes'}</h2>
       <p class="muted">This summary counts learners from the class forms you have filled in for ${esc(PERIOD_LABEL[ui.period])}, ${esc(lang)}. To include other teachers’ sections, use <b>Settings › Add a colleague’s classes</b>.</p></div>${detailsPanel(f)}`;
-    const preview = kind === 'none' || kind === 'learner' ? false : kind === 'class' ? ui.preview : true;
+    const formMode = kind === 'none' || kind === 'learner' || (kind === 'class' && !ui.tableView);
+    const preview = formMode ? false : kind === 'class' ? ui.preview : true;
     return `
       ${fileBar}
       ${top}
@@ -2643,7 +2670,9 @@ window.SAMPLE_TEMPLATES = {
         <button class="btn primary" type="button" data-act="save-form">Save as Excel file</button>
         ${isDesktop ? '<button class="btn" type="button" data-act="open-form">Open in Excel to print</button>' : ''}
         ${kind === 'learner' ? '<button class="btn" type="button" data-act="save-all">Save all learners (.zip)</button>' : ''}
-        ${kind === 'class' ? `<button class="btn" type="button" data-act="toggle-preview">${ui.preview ? 'Hide printout' : 'See how it prints'}</button>` : ''}
+        ${canPrint ? '<button class="btn" type="button" data-act="print-form">Print</button>' : ''}
+        ${kind === 'class' && ui.tableView ? `<button class="btn" type="button" data-act="toggle-preview">${ui.preview ? 'Hide printout' : 'See how it prints'}</button>` : ''}
+        ${kind === 'class' ? `<button class="btn quiet" type="button" data-act="toggle-table">${ui.tableView ? 'Type on the form instead' : 'Type in a table instead'}</button>` : ''}
         <details class="pagesetup"><summary>Page setup</summary>
           <div class="stack" style="margin-top:8px">
             <label class="field"><span>Size on paper</span><select id="pg-fit">${options([['auto', 'Automatic (recommended)'], ['page', 'Whole form on one page'], ['width', 'Fit to page width'], ['none', 'As set in the form']], ui.page.fit === false ? 'none' : ui.page.fit === true || ui.page.fit == null ? 'auto' : ui.page.fit)}</select></label>
@@ -2673,12 +2702,60 @@ window.SAMPLE_TEMPLATES = {
     const edits = formEdits(f, false);
     const values = Object.assign({}, auto, edits);
     const marks = {};
+    const locked = new Set(), toggles = new Set();
+    formMap = f.m.kind === 'class' ? learnerCells(f) : {};
+    for (const ref in formMap) {
+      const k = colKind(formMap[ref].c);
+      if (['no', 'x-cond', 'x-formula', 'auto'].includes(k) || (k === 'x-total' && (formMap[ref].c.sumOf || []).length)) locked.add(ref);
+      else if (['lvlmark', 'sexmark', 'flag', 'x-check'].includes(k)) toggles.add(ref);
+      if (!formMap[ref].lid && k !== 'name' && k !== 'no') locked.add(ref);
+      if (formMap[ref].lid && !(ref in values)) values[ref] = '';
+    }
     for (const ref in edits) marks[ref] = 'mk-typed';
     for (const ref in auto) if (!(ref in edits)) marks[ref] = 'mk-fill';
-    const out = XL.renderPages(sheet, XL.effectivePage(sheet, pageSetup(f)), { editable: true, values, marks });
+    const out = XL.renderPages(sheet, XL.effectivePage(sheet, pageSetup(f)), { editable: true, values, marks, locked, toggles });
     box.innerHTML = pagesNote(out.count) + out.html;
     box.dataset.key = f.key;
     fitZoom(box);
+    const over = f.m.kind === 'class' ? f.m.lists.some(l => learnerParts(f, l).some(p => p.learners.length > p.cap)) : false;
+    if (over) box.insertAdjacentHTML('afterbegin', '<div class="notice">There are more learners than rows on this form. The extra learners are saved as another page (a second file) when you save.</div>');
+    if (focusAfter) {
+      const el = $(`#formview td[data-ref="${focusAfter}"] [contenteditable], #formview td[data-ref="${focusAfter}"] .xl-toggle`);
+      focusAfter = null;
+      if (el) { el.focus(); placeCaretEnd(el); }
+    }
+  }
+  let formMap = {}, focusAfter = null;
+  function placeCaretEnd(el) {
+    if (!el.isContentEditable) return;
+    try { const r = document.createRange(); r.selectNodeContents(el); r.collapse(false); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); } catch (e) { /* ignore */ }
+  }
+  // learners of each part of a learner table, in the order the saved file uses
+  function learnerParts(f, list) {
+    const cls = currentClass(true);
+    const all = Data.sortLearners(cls.learners);
+    const hasSex = list.parts.some(p => p.sex);
+    return list.parts.map((p, pi) => {
+      let learners = hasSex ? all.filter(l => l.sex === p.sex) : [...all.filter(l => l.sex === 'M'), ...all.filter(l => l.sex !== 'M')];
+      if (!hasSex && list.parts.length > 1) {
+        const before = list.parts.slice(0, pi).reduce((a, q) => a + q.last - q.first + 1, 0);
+        learners = learners.slice(before);
+      }
+      return { part: p, learners, cap: p.last - p.first + 1 };
+    });
+  }
+  function learnerCells(f) {
+    const map = {};
+    f.m.lists.forEach((list, li) => {
+      const cols = list.columns.slice().sort((a, b) => a.col - b.col);
+      for (const pp of learnerParts(f, list)) {
+        for (let i = 0; i <= pp.part.last - pp.part.first; i++) {
+          const l = pp.learners[i];
+          cols.forEach((c, ci) => { map[XL.makeRef(pp.part.first + i, c.col)] = { li, ci, c, lid: l ? l.id : null, sex: pp.part.sex || '' }; });
+        }
+      }
+    });
+    return map;
   }
 
   // the "header" values of a form: school, teacher, grade & section, date...
@@ -2780,14 +2857,19 @@ window.SAMPLE_TEMPLATES = {
     }
   }
 
+  function foundBanner(f) {
+    const cls = currentClass(true);
+    if (cls.learners.length) return '';
+    return f.m.lists.map((list, li) => {
+      const found = (list.found || []).length;
+      return found ? `<div class="banner"><span><b>This file already has ${found} learner${found === 1 ? '' : 's'} filled in.</b> Bring them into the app with their entries so you can keep working on them.</span><button class="btn primary small" type="button" data-act="import-found" data-li="${li}">Bring them in</button></div>` : '';
+    }).join('');
+  }
+
   function fillClass(f, lang) {
     const cls = currentClass(true);
-    let html = detailsPanel(f);
+    let html = detailsPanel(f) + foundBanner(f);
     f.m.lists.forEach((list, li) => {
-      const found = (list.found || []).length;
-      if (found && !cls.learners.length) {
-        html += `<div class="banner"><span><b>This file already has ${found} learner${found === 1 ? '' : 's'} filled in.</b> Bring them into the app with their entries so you can keep working on them.</span><button class="btn primary small" type="button" data-act="import-found" data-li="${li}">Bring them in</button></div>`;
-      }
       const cols = list.columns.slice().sort((a, b) => a.col - b.col);
       const hasSexParts = list.parts.some(p => p.sex);
       const all = Data.sortLearners(cls.learners);
@@ -2987,6 +3069,27 @@ window.SAMPLE_TEMPLATES = {
     } catch (e) {
       if (seq === previewSeq) box.innerHTML = `<div class="notice bad">${esc(e.message || e)}</div>`;
     }
+  }
+
+  // print the filled pages straight from the app
+  async function printForm() {
+    try {
+      const res = await buildFiles(false);
+      if (!res || !res.files.length) { toast('Nothing to print yet.'); return; }
+      let html = '', size = null;
+      for (const file of res.files) {
+        const wb = await XL.loadWorkbook(file.data.slice(0));
+        const sheet = wb.sheets.find(x => x.path === res.f.m.sheetPath);
+        XL.computeFormulas(sheet);
+        const out = XL.renderPages(sheet, XL.effectivePage(sheet, pageSetup(res.f)));
+        html += out.html;
+        size = size || out.layout;
+      }
+      let root = $('#print-root');
+      if (!root) { root = document.createElement('div'); root.id = 'print-root'; document.body.appendChild(root); }
+      root.innerHTML = `<style>@page { size: ${(size.pageW / 96).toFixed(2)}in ${(size.pageH / 96).toFixed(2)}in; margin: 0; }</style>${html}`;
+      window.print();
+    } catch (e) { toast(e.message || String(e)); }
   }
 
   async function saveForm(openAfter, all) {
@@ -3292,6 +3395,10 @@ window.SAMPLE_TEMPLATES = {
       const lid = b.closest('tr').dataset.lid;
       for (const c of state.classes) c.learners = c.learners.filter(l => l.id !== lid);
       delete state.results[lid]; save(); render();
+    } else if (act === 'toggle-table') {
+      ui.tableView = !ui.tableView; ui.preview = !ui.tableView ? false : true; render();
+    } else if (act === 'print-form') {
+      printForm();
     } else if (act === 'toggle-preview') {
       ui.preview = !ui.preview; render();
       if (ui.preview) $('#preview').scrollIntoView({ block: 'start', behavior: 'smooth' });
@@ -3459,12 +3566,56 @@ window.SAMPLE_TEMPLATES = {
     const td = div.closest('td[data-ref]');
     const ref = td.dataset.ref;
     const text = div.innerText.replace(/\n+$/, '');
-    const edits = formEdits(f, true);
     if (text === (div.dataset.orig ?? '')) return;
+    const cellInfo = formMap[ref];
+    if (cellInfo) {
+      const k = colKind(cellInfo.c);
+      if (!cellInfo.lid) {
+        if (k === 'name' && text.trim()) addLearners([text], cellInfo.sex);
+      } else {
+        const l = findLearner(cellInfo.lid);
+        if (k === 'name' && !text.trim()) { toast('To remove a learner, use the ✕ in the table view.'); }
+        else setGridValue(l, cellInfo.c, text, formLang(f));
+      }
+      save();
+      redrawFormSoon();
+      return;
+    }
+    const edits = formEdits(f, true);
     edits[ref] = text;
     td.classList.add('mk-typed'); td.classList.remove('mk-fill');
     save();
   }
+  let redrawTimer = null;
+  function redrawFormSoon() {
+    clearTimeout(redrawTimer);
+    redrawTimer = setTimeout(() => {
+      const a = document.activeElement;
+      const td = a && a.closest && a.closest('#formview td[data-ref]');
+      focusAfter = td ? td.dataset.ref : null;
+      const f = currentForm();
+      if (f) renderFormView(f);
+    }, 0);
+  }
+  function toggleCell(el) {
+    const f = currentForm();
+    const ref = el.closest('td[data-ref]').dataset.ref;
+    const info = formMap[ref];
+    if (!info || !info.lid) return;
+    const l = findLearner(info.lid);
+    const k = colKind(info.c);
+    const lang = formLang(f);
+    const res = Data.result(state, l.id, ui.period, lang);
+    const on = k === 'lvlmark' ? res.level === info.c.choice : k === 'sexmark' ? l.sex === info.c.choice : k === 'flag' ? !!res[info.c.key === 'a.struggling' ? 'struggling' : 'nonReader'] : !!(res.x || {})[info.c.key];
+    setGridValue(l, info.c, !on, lang);
+    save();
+    focusAfter = ref;
+    renderFormView(f);
+  }
+  document.addEventListener('click', (e) => {
+    const tg = e.target.closest && e.target.closest('#formview .xl-toggle');
+    if (tg) toggleCell(tg);
+  });
   document.addEventListener('focusin', (e) => {
     const d = e.target;
     if (d.isContentEditable && d.closest('#formview')) d.dataset.orig = d.innerText;
@@ -3475,6 +3626,7 @@ window.SAMPLE_TEMPLATES = {
   });
   document.addEventListener('keydown', (e) => {
     const t = e.target;
+    if (t.classList && t.classList.contains('xl-toggle') && (e.key === ' ' || e.key === 'Enter' || e.key === '1' || /^[xX√/]$/.test(e.key))) { e.preventDefault(); toggleCell(t); return; }
     if (t.isContentEditable && t.closest('#formview') && e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       const td = t.closest('td[data-ref]');

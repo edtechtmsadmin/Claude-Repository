@@ -302,3 +302,20 @@ td.mk-fill { box-shadow: inset 0 0 0 999px rgba(31, 95, 191, .10); }
 @media (prefers-reduced-motion: no-preference) {
   .nav-item, .btn, .class-item { transition: background-color .15s, border-color .15s, box-shadow .15s; }
 }
+
+/* tick boxes on the form */
+#formview .xl-toggle { cursor: pointer; min-height: 1em; outline: none; }
+#formview td:has(.xl-toggle):hover { box-shadow: inset 0 0 0 999px rgba(29, 107, 87, .12); }
+
+/* printing from the app: only the pages */
+#print-root { display: none; }
+@media print {
+  body > *:not(#print-root) { display: none !important; }
+  #print-root { display: block; }
+  #print-root .xl-pages { display: block; padding: 0; zoom: 1 !important; }
+  #print-root .xl-page { box-shadow: none; break-after: page; margin: 0; }
+  #print-root .xl-page:last-child { break-after: auto; }
+  #print-root .xl-page-no { display: none; }
+  html, body { background: #fff !important; }
+  :root { padding: 0 !important; }
+}

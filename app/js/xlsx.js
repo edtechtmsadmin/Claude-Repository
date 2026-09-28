@@ -426,6 +426,8 @@
    * opts.marks: {ref: className} to highlight cells (mapping view)
    * opts.values: {ref: text} to show pending values without saving
    * opts.editable: let the user type into every cell that is not a formula
+   * opts.locked: Set of refs that stay read-only (worked out by the app)
+   * opts.toggles: Set of refs that switch on/off with a click (tick columns)
    */
   function printArea(sheet) {
     return sheet.printArea || { r1: 1, c1: 1, r2: Math.max(sheet.maxR, 1), c2: Math.max(sheet.maxC, 1) };
@@ -502,8 +504,11 @@
         const cls = marks[ref] ? ` class="${marks[ref]}"` : '';
         const tip = opts.titles && opts.titles[ref] ? ` title="${esc(opts.titles[ref])}"` : '';
         const vert = st && st.rotate === 255 ? ' xl-vert' : '';
-        const editable = opts.editable && !cont && !(cell && cell.formula);
-        html += `<td${cont ? '' : ` data-ref="${ref}"`}${rs > 1 ? ` rowspan="${rs}"` : ''}${cs > 1 ? ` colspan="${cs}"` : ''}${cls}${tip} style="${css.join(';')}"><div class="xl-c${st && st.wrap ? ' xl-wrap' : ''}${vert}"${editable ? ' contenteditable="true" spellcheck="false"' : ''}>${esc(txt)}</div></td>`;
+        const locked = opts.locked && opts.locked.has(ref);
+        const toggle = opts.toggles && opts.toggles.has(ref);
+        const editable = opts.editable && !cont && !(cell && cell.formula) && !locked && !toggle;
+        const inner = toggle ? ' tabindex="0" role="checkbox"' : editable ? ' contenteditable="true" spellcheck="false"' : '';
+        html += `<td${cont ? '' : ` data-ref="${ref}"`}${rs > 1 ? ` rowspan="${rs}"` : ''}${cs > 1 ? ` colspan="${cs}"` : ''}${cls}${tip} style="${css.join(';')}"><div class="xl-c${st && st.wrap ? ' xl-wrap' : ''}${vert}${toggle ? ' xl-toggle' : ''}"${inner}>${esc(txt)}</div></td>`;
       }
       html += '</tr>';
     }
