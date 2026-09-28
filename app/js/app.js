@@ -225,7 +225,7 @@
         ${kind === 'class' ? `<button class="btn" type="button" data-act="toggle-preview">${ui.preview ? 'Hide printout' : 'See how it prints'}</button>` : ''}
         <details class="pagesetup"><summary>Page setup</summary>
           <div class="stack" style="margin-top:8px">
-            <label class="row" style="gap:6px"><input type="checkbox" id="pg-fit" ${ui.page.fit !== false ? 'checked' : ''}> Fit to page width</label>
+            <label class="field"><span>Size on paper</span><select id="pg-fit">${options([['auto', 'Automatic (recommended)'], ['page', 'Whole form on one page'], ['width', 'Fit to page width'], ['none', 'As set in the form']], ui.page.fit === false ? 'none' : ui.page.fit === true || ui.page.fit == null ? 'auto' : ui.page.fit)}</select></label>
             <label class="field"><span>Orientation</span><select id="pg-orient">${options([['', 'As in form'], ['portrait', 'Portrait'], ['landscape', 'Landscape']], ui.page.orient ?? ((kind === 'grade' || kind === 'school') ? 'landscape' : ''))}</select></label>
             <label class="field"><span>Paper</span><select id="pg-paper">${options(PAPER, ui.page.paper || '')}</select></label>
           </div>
@@ -254,7 +254,7 @@
     const marks = {};
     for (const ref in edits) marks[ref] = 'mk-typed';
     for (const ref in auto) if (!(ref in edits)) marks[ref] = 'mk-fill';
-    const out = XL.renderPages(sheet, pageSetup(f), { editable: true, values, marks });
+    const out = XL.renderPages(sheet, XL.effectivePage(sheet, pageSetup(f)), { editable: true, values, marks });
     box.innerHTML = pagesNote(out.count) + out.html;
     box.dataset.key = f.key;
     fitZoom(box);
@@ -529,7 +529,8 @@
   // the page options used both on screen and in the saved file
   function pageSetup(f) {
     const kind = f.m.kind;
-    return { fit: ui.page.fit !== false, orientation: (ui.page.orient ?? ((kind === 'grade' || kind === 'school') ? 'landscape' : '')) || null, paper: ui.page.paper ? +ui.page.paper : null };
+    const fit = ui.page.fit === false ? 'none' : ui.page.fit === true || ui.page.fit == null ? 'auto' : ui.page.fit;
+    return { fit: fit === 'none' ? null : fit, orientation: (ui.page.orient ?? ((kind === 'grade' || kind === 'school') ? 'landscape' : '')) || null, paper: ui.page.paper ? +ui.page.paper : null };
   }
   // shrink the pages so a whole page width fits the screen
   function fitZoom(box) {
@@ -559,7 +560,7 @@
       if (seq !== previewSeq) return;
       const sheet = wb.sheets.find(s => s.path === res.f.m.sheetPath);
       XL.computeFormulas(sheet);
-      const out = XL.renderPages(sheet, pageSetup(res.f));
+      const out = XL.renderPages(sheet, XL.effectivePage(sheet, pageSetup(res.f)));
       box.innerHTML = pagesNote(out.count) + out.html;
       fitZoom(box);
     } catch (e) {
@@ -978,7 +979,7 @@
       return;
     }
     if (t.id === 'pg-fit' || t.id === 'pg-orient' || t.id === 'pg-paper') {
-      if (t.id === 'pg-fit') ui.page.fit = t.checked; else if (t.id === 'pg-orient') ui.page.orient = t.value; else ui.page.paper = t.value;
+      if (t.id === 'pg-fit') ui.page.fit = t.value; else if (t.id === 'pg-orient') ui.page.orient = t.value; else ui.page.paper = t.value;
       const f = currentForm();
       if (f && (f.m.kind === 'none' || f.m.kind === 'learner')) renderFormView(f); else refreshPreview();
       return;

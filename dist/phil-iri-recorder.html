@@ -893,8 +893,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const pg = Object.assign({}, sheet.page);
     if (override.orientation) pg.orientation = override.orientation;
     if (override.paper) pg.paperSize = override.paper;
-    // "fit to page width" only shrinks a form that is too wide; otherwise the form's own size is kept
-    if (override.fit && needsFit(sheet, pg)) { pg.fitToPage = true; pg.fitToWidth = 1; pg.fitToHeight = 0; }
+    // fit 'page': whole form on one page; 'width': shrink only a form that is too wide
+    if (override.fit === 'page') { pg.fitToPage = true; pg.fitToWidth = 1; pg.fitToHeight = 1; }
+    else if (override.fit && needsFit(sheet, pg)) { pg.fitToPage = true; pg.fitToWidth = 1; pg.fitToHeight = 0; }
     let [w, h] = PAPER_IN[pg.paperSize] || PAPER_IN[9];
     if (pg.orientation === 'landscape') [w, h] = [h, w];
     const DPI = 96;
@@ -944,12 +945,29 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     for (let c = area.c1; c <= area.c2; c++) totalW += colPx(sheet, c);
     return totalW * (pg.scale || 100) / 100 > printW + 1;
   }
-  // the page options to write into the saved file (same rule as the screen)
+  /* The page options to write into the saved file (same rule as the screen).
+   * fit 'auto': fit to width, and if only a little would spill onto an extra
+   * page, fit the whole form on one page instead. */
   function effectivePage(sheet, override) {
-    const pg = Object.assign({}, sheet.page);
-    if (override.orientation) pg.orientation = override.orientation;
-    if (override.paper) pg.paperSize = override.paper;
-    return Object.assign({}, override, { fit: !!override.fit && needsFit(sheet, pg) });
+    const o = Object.assign({}, override);
+    if (o.fit === true) o.fit = 'width';
+    if (o.fit === 'auto') {
+      const lay = paginate(sheet, Object.assign({}, o, { fit: 'width' }));
+      o.fit = 'width';
+      if (lay.pages.length === 2) {
+        const last = lay.pages[1];
+        let h = 0;
+        for (let r = last.r1; r <= last.r2; r++) h += rowPx(sheet, r);
+        if (h * lay.scale < lay.printH * 0.25) o.fit = 'page';
+      }
+    }
+    if (o.fit === 'width') {
+      const pg = Object.assign({}, sheet.page);
+      if (o.orientation) pg.orientation = o.orientation;
+      if (o.paper) pg.paperSize = o.paper;
+      if (!needsFit(sheet, pg)) o.fit = null;
+    }
+    return o;
   }
 
   function renderPages(sheet, override, opts = {}) {
@@ -1119,7 +1137,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         root.insertBefore(pm, ps);
       }
     }
-    if (page.fit) { ps.setAttribute('fitToWidth', '1'); ps.setAttribute('fitToHeight', '0'); }
+    if (page.fit) { ps.setAttribute('fitToWidth', '1'); ps.setAttribute('fitToHeight', page.fit === 'page' ? '1' : '0'); }
     if (page.orientation) ps.setAttribute('orientation', page.orientation);
     if (page.paper) ps.setAttribute('paperSize', String(page.paper));
     else if (!ps.getAttribute('paperSize')) ps.setAttribute('paperSize', '9');
@@ -2628,7 +2646,7 @@ window.SAMPLE_TEMPLATES = {
         ${kind === 'class' ? `<button class="btn" type="button" data-act="toggle-preview">${ui.preview ? 'Hide printout' : 'See how it prints'}</button>` : ''}
         <details class="pagesetup"><summary>Page setup</summary>
           <div class="stack" style="margin-top:8px">
-            <label class="row" style="gap:6px"><input type="checkbox" id="pg-fit" ${ui.page.fit !== false ? 'checked' : ''}> Fit to page width</label>
+            <label class="field"><span>Size on paper</span><select id="pg-fit">${options([['auto', 'Automatic (recommended)'], ['page', 'Whole form on one page'], ['width', 'Fit to page width'], ['none', 'As set in the form']], ui.page.fit === false ? 'none' : ui.page.fit === true || ui.page.fit == null ? 'auto' : ui.page.fit)}</select></label>
             <label class="field"><span>Orientation</span><select id="pg-orient">${options([['', 'As in form'], ['portrait', 'Portrait'], ['landscape', 'Landscape']], ui.page.orient ?? ((kind === 'grade' || kind === 'school') ? 'landscape' : ''))}</select></label>
             <label class="field"><span>Paper</span><select id="pg-paper">${options(PAPER, ui.page.paper || '')}</select></label>
           </div>
@@ -2657,7 +2675,7 @@ window.SAMPLE_TEMPLATES = {
     const marks = {};
     for (const ref in edits) marks[ref] = 'mk-typed';
     for (const ref in auto) if (!(ref in edits)) marks[ref] = 'mk-fill';
-    const out = XL.renderPages(sheet, pageSetup(f), { editable: true, values, marks });
+    const out = XL.renderPages(sheet, XL.effectivePage(sheet, pageSetup(f)), { editable: true, values, marks });
     box.innerHTML = pagesNote(out.count) + out.html;
     box.dataset.key = f.key;
     fitZoom(box);
@@ -2932,7 +2950,8 @@ window.SAMPLE_TEMPLATES = {
   // the page options used both on screen and in the saved file
   function pageSetup(f) {
     const kind = f.m.kind;
-    return { fit: ui.page.fit !== false, orientation: (ui.page.orient ?? ((kind === 'grade' || kind === 'school') ? 'landscape' : '')) || null, paper: ui.page.paper ? +ui.page.paper : null };
+    const fit = ui.page.fit === false ? 'none' : ui.page.fit === true || ui.page.fit == null ? 'auto' : ui.page.fit;
+    return { fit: fit === 'none' ? null : fit, orientation: (ui.page.orient ?? ((kind === 'grade' || kind === 'school') ? 'landscape' : '')) || null, paper: ui.page.paper ? +ui.page.paper : null };
   }
   // shrink the pages so a whole page width fits the screen
   function fitZoom(box) {
@@ -2962,7 +2981,7 @@ window.SAMPLE_TEMPLATES = {
       if (seq !== previewSeq) return;
       const sheet = wb.sheets.find(s => s.path === res.f.m.sheetPath);
       XL.computeFormulas(sheet);
-      const out = XL.renderPages(sheet, pageSetup(res.f));
+      const out = XL.renderPages(sheet, XL.effectivePage(sheet, pageSetup(res.f)));
       box.innerHTML = pagesNote(out.count) + out.html;
       fitZoom(box);
     } catch (e) {
@@ -3381,7 +3400,7 @@ window.SAMPLE_TEMPLATES = {
       return;
     }
     if (t.id === 'pg-fit' || t.id === 'pg-orient' || t.id === 'pg-paper') {
-      if (t.id === 'pg-fit') ui.page.fit = t.checked; else if (t.id === 'pg-orient') ui.page.orient = t.value; else ui.page.paper = t.value;
+      if (t.id === 'pg-fit') ui.page.fit = t.value; else if (t.id === 'pg-orient') ui.page.orient = t.value; else ui.page.paper = t.value;
       const f = currentForm();
       if (f && (f.m.kind === 'none' || f.m.kind === 'learner')) renderFormView(f); else refreshPreview();
       return;

@@ -540,8 +540,9 @@
     const pg = Object.assign({}, sheet.page);
     if (override.orientation) pg.orientation = override.orientation;
     if (override.paper) pg.paperSize = override.paper;
-    // "fit to page width" only shrinks a form that is too wide; otherwise the form's own size is kept
-    if (override.fit && needsFit(sheet, pg)) { pg.fitToPage = true; pg.fitToWidth = 1; pg.fitToHeight = 0; }
+    // fit 'page': whole form on one page; 'width': shrink only a form that is too wide
+    if (override.fit === 'page') { pg.fitToPage = true; pg.fitToWidth = 1; pg.fitToHeight = 1; }
+    else if (override.fit && needsFit(sheet, pg)) { pg.fitToPage = true; pg.fitToWidth = 1; pg.fitToHeight = 0; }
     let [w, h] = PAPER_IN[pg.paperSize] || PAPER_IN[9];
     if (pg.orientation === 'landscape') [w, h] = [h, w];
     const DPI = 96;
@@ -591,12 +592,29 @@
     for (let c = area.c1; c <= area.c2; c++) totalW += colPx(sheet, c);
     return totalW * (pg.scale || 100) / 100 > printW + 1;
   }
-  // the page options to write into the saved file (same rule as the screen)
+  /* The page options to write into the saved file (same rule as the screen).
+   * fit 'auto': fit to width, and if only a little would spill onto an extra
+   * page, fit the whole form on one page instead. */
   function effectivePage(sheet, override) {
-    const pg = Object.assign({}, sheet.page);
-    if (override.orientation) pg.orientation = override.orientation;
-    if (override.paper) pg.paperSize = override.paper;
-    return Object.assign({}, override, { fit: !!override.fit && needsFit(sheet, pg) });
+    const o = Object.assign({}, override);
+    if (o.fit === true) o.fit = 'width';
+    if (o.fit === 'auto') {
+      const lay = paginate(sheet, Object.assign({}, o, { fit: 'width' }));
+      o.fit = 'width';
+      if (lay.pages.length === 2) {
+        const last = lay.pages[1];
+        let h = 0;
+        for (let r = last.r1; r <= last.r2; r++) h += rowPx(sheet, r);
+        if (h * lay.scale < lay.printH * 0.25) o.fit = 'page';
+      }
+    }
+    if (o.fit === 'width') {
+      const pg = Object.assign({}, sheet.page);
+      if (o.orientation) pg.orientation = o.orientation;
+      if (o.paper) pg.paperSize = o.paper;
+      if (!needsFit(sheet, pg)) o.fit = null;
+    }
+    return o;
   }
 
   function renderPages(sheet, override, opts = {}) {
@@ -766,7 +784,7 @@
         root.insertBefore(pm, ps);
       }
     }
-    if (page.fit) { ps.setAttribute('fitToWidth', '1'); ps.setAttribute('fitToHeight', '0'); }
+    if (page.fit) { ps.setAttribute('fitToWidth', '1'); ps.setAttribute('fitToHeight', page.fit === 'page' ? '1' : '0'); }
     if (page.orientation) ps.setAttribute('orientation', page.orientation);
     if (page.paper) ps.setAttribute('paperSize', String(page.paper));
     else if (!ps.getAttribute('paperSize')) ps.setAttribute('paperSize', '9');
