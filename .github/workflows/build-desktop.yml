@@ -1,0 +1,26 @@
+name: Build Windows app
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "app/**"
+      - "electron/**"
+      - "package.json"
+      - ".github/workflows/build-desktop.yml"
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run dist:win
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Phil-IRI-Recorder-Windows
+          path: dist-electron/*.exe
+          if-no-files-found: error

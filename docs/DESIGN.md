@@ -265,3 +265,25 @@ Old profiles are never deleted, so a 2026 report can always be reprinted in the
   Profile, the Individual Reading Record, or all of them?
 - Is English and Filipino testing done in the same period, and printed on the
   same form or on separate forms?
+
+## 13. What the first real template taught us (SY 2025-2026 JHS SDO template)
+
+The first real template (`samples/phil-iri-jhs-sdo-template.xlsx`) changed a few
+assumptions, and the app now handles all of these:
+
+- One workbook holds six forms: Class, Grade Level and School summaries, each in
+  Filipino and English. The language comes from the sheet name or title.
+- Class summaries list **males and females in separate tables** ("TOTAL MALE",
+  "TOTAL FEMALE"), with levels marked by **"Put 1"** columns so the template's own
+  `SUM` totals work. The mark is therefore the number `1`, not a check mark.
+- Header values often live **inside text**: `GRADE _____`, `(DISTRICT)`,
+  `(SCHOOL ID - SCHOOL NAME)`, `SCHOOL YEAR 2025-2026`, `(MIDYEAR)`. The app
+  fills blanks, replaces placeholders, and swaps the year and period words.
+- Grade Level and School summaries are **count tables** (rows = sections or
+  grade levels; M/F columns under each level, "Independent in Grade N",
+  struggling and non-readers). Total columns are formulas and are never touched.
+- The data needed per learner is smaller than first planned: reading level, the
+  grade level where the learner is independent, and the struggling reader and
+  non-reader flags. Raw oral-reading scores are optional (scoring helper).
+- The template has no print setup, so it spills over several pages. Saving
+  offers "fit to page width", orientation and paper size.

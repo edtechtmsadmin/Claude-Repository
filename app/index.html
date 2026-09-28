@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+  <title>Phil-IRI Recorder</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,600&family=JetBrains+Mono:wght@500&display=swap">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+  <nav class="rail" aria-label="Main">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">IRI</span>
+      <div>
+        <div class="brand-name">Phil-IRI Recorder</div>
+        <div class="brand-sy" id="brand-sy"></div>
+      </div>
+    </div>
+    <button class="nav-item" data-view="classes" type="button">Classes &amp; learners</button>
+    <button class="nav-item" data-view="results" type="button">Reading results</button>
+    <button class="nav-item" data-view="templates" type="button">Templates</button>
+    <button class="nav-item" data-view="print" type="button">Print forms</button>
+    <button class="nav-item" data-view="settings" type="button">School &amp; settings</button>
+    <div class="rail-foot" id="rail-foot"></div>
+  </nav>
+  <main class="main">
+    <div id="banner"></div>
+    <div id="view"></div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="vendor/jszip.min.js"></script>
+<script src="js/xlsx.js"></script>
+<script src="js/detect.js"></script>
+<script src="js/data.js"></script>
+<script src="js/samples.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

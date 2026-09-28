@@ -1,0 +1,35 @@
+{
+  "name": "phil-iri-recorder",
+  "productName": "Phil-IRI Recorder",
+  "version": "0.1.0",
+  "description": "Records Phil-IRI BOSY, MOSY and EOSY results and prints them on the DepEd templates you import.",
+  "main": "electron/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "build:web": "node tools/build.mjs",
+    "dist:win": "node tools/build.mjs && electron-builder --win --publish never"
+  },
+  "devDependencies": {
+    "electron": "^38.2.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "ph.philiri.recorder",
+    "productName": "Phil-IRI Recorder",
+    "directories": { "output": "dist-electron" },
+    "files": ["app/**/*", "electron/**/*", "package.json"],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "Phil-IRI-Recorder-Setup-${version}.${ext}"
+    },
+    "portable": { "artifactName": "Phil-IRI-Recorder-Portable-${version}.${ext}" }
+  }
+}

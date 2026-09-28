@@ -1,0 +1,4 @@
+node_modules/
+dist-electron/
+dist/artifact.html
+__pycache__/
