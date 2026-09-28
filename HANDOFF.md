@@ -17,6 +17,20 @@ so the app must:
 The users are non-technical teachers, each on their own laptop. Keep the UI
 simple: one screen, one tab per form, no set-up steps.
 
+## Decision (latest): the app is a consolidator
+
+After many rounds trying to draw forms on screen exactly like Excel, the
+teacher chose Option 2: the app reads the uploaded template, the teacher enters
+data in a simple table, and the app saves the uploaded template itself filled
+in. Printing is done from Excel. There is no on-screen imitation of the form in
+the main flow any more (the drawing code in xlsx.js is only used by "Adjust").
+The UI was redesigned (Lexend, school blue + pencil yellow, cards, stat strip).
+Next planned: move from Electron to Tauri for a much smaller app (5-15 MB);
+automation of names/data from other sources is a future update.
+Templates change every year: never hard-code a layout; everything comes from
+detect.js. `samples/phil-iri-jhs-sdo-template-v2.xlsx` is a second, differently
+laid out version of the JHS template (33 male rows) used to check that.
+
 ## How it works (key idea)
 
 The app never rebuilds the workbook. `app/js/xlsx.js` edits only the target

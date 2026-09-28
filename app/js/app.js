@@ -136,19 +136,23 @@
   // ---------- render root ----------
   function render() {
     $('#brand-sy').textContent = 'School year ' + state.sy;
-    $('#settings-btn').textContent = ui.view === 'fill' ? 'Settings' : '‹ Back to my forms';
-    $('#settings-btn').dataset.act = ui.view === 'fill' ? 'go-settings' : 'go-fill';
+    const onWork = ui.view === 'fill';
+    $('#settings-btn').textContent = onWork ? 'Settings' : '‹ Back to my forms';
+    $('#settings-btn').dataset.act = onWork ? 'go-settings' : 'go-fill';
+    // the file switcher lives in the top bar
+    const f0 = currentForm();
+    const files = state.templates.filter(t => t.sheets.some(usable));
+    $('#topbar-files').innerHTML = onWork && f0 ? `
+      <label class="file-switch"><span class="visually-hidden">Form file</span>
+        <select id="file-pick" aria-label="Form file">${options(files.map(t => [t.id, t.name]).concat([['__upload', '+ Upload another form…']]), f0.t.id)}</select>
+      </label>
+      <input type="file" id="tpl-file" hidden accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">` : '';
     $('#rail-foot').textContent = isDesktop ? 'Your work is saved on this computer automatically.' : 'Test version: your work is kept in this browser. Save a backup in Settings.';
     const v = $('#view');
     if (ui.view === 'adjust' && ui.tplId) { v.innerHTML = '<div class="empty">Opening…</div>'; renderMapper(); return; }
-    document.body.classList.remove('fill-view');
     if (ui.view === 'settings') { v.innerHTML = viewSettings() + viewClasses(); return; }
     ui.view = 'fill';
     v.innerHTML = viewFill();
-    document.body.classList.toggle('fill-view', !!currentForm());
-    const f = currentForm();
-    if (f && (f.m.kind === 'none' || (f.m.kind === 'learner' && ui.learnerId) || (f.m.kind === 'class' && !ui.tableView))) renderFormView(f);
-    else if (ui.preview || (f && f.m.kind !== 'class')) refreshPreview();
   }
 
   // ================= Fill in forms =================
@@ -167,83 +171,124 @@
   function viewFill() {
     const f = currentForm();
     if (!f) {
+      const samples = Object.entries(window.SAMPLE_TEMPLATES || {});
       return `
-        <div class="head"><div><h1>Phil-IRI Recorder</h1><p>Record BOSY, MOSY and EOSY results and print them on the DepEd form, exactly as it looks.</p></div></div>
+        <section class="hero">
+          <p class="eyebrow">Phil-IRI · BOSY · MOSY · EOSY</p>
+          <h1>Fill in your DepEd reading forms without retyping them.</h1>
+          <p class="lede">Upload the Excel form you received. Type the names and scores in a simple table. Save, and you get the very same form back, filled in and ready to print.</p>
+        </section>
         <ol class="steps">
-          <li><b>Upload the form</b><span>The Excel template from DepEd or your division.</span></li>
-          <li><b>Type names and scores</b><span>In a table with the same columns as the form.</span></li>
-          <li><b>Save and print</b><span>You get the same form, filled in.</span></li>
+          <li><b>Upload the form</b><span>The Excel file from DepEd or your division, as it is.</span></li>
+          <li><b>Type names and scores</b><span>A table with the same columns as the form. Totals fill themselves.</span></li>
+          <li><b>Save and print</b><span>Your form, filled in, opened in Excel for printing.</span></li>
         </ol>
-        ${uploadBox(true)}`;
+        <label class="drop big" id="drop">
+          <svg class="drop-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M14 6h14l10 10v26H14z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M28 6v10h10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M26 36V22m-6 6 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <b>Choose your Excel form</b>
+          <span class="muted">or drop it here · .xlsx, blank or already filled in</span>
+          <input type="file" id="tpl-file" class="drop-input" accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+        </label>
+        ${samples.length ? `<p class="samples muted">No form at hand? Try a sample: ${samples.map(([k, s]) => `<button class="linkbtn" type="button" data-act="load-sample-tpl" data-k="${k}">${esc(s.name)}</button>`).join(' · ')}</p>` : ''}`;
     }
+    return viewWork(f);
+  }
+
+  // ---------- the working screen: one form, one table ----------
+  const FIT_OPTIONS = [['none', 'Keep the form’s own print settings'], ['auto', 'Tidy up printing automatically'], ['page', 'Whole form on one page'], ['width', 'Fit to page width']];
+  function viewWork(f) {
     const tabs = allForms().filter(x => x.t.id === f.t.id);
     const kind = f.m.kind;
     const lang = formLang(f);
-    const sel = (id, label, opts, val) => `<select id="${id}" class="fb-sel" aria-label="${label}" title="${label}">${options(opts, val)}</select>`;
     let who = '';
     if (kind === 'class' || kind === 'learner' || kind === 'none') {
       const cls = currentClass(true);
-      who = sel('fill-class', 'Class', syClasses().map(c => [c.id, className(c)]).concat([['__new', '+ Add another class']]), cls.id);
-      if (kind === 'learner') {
-        const ls = Data.sortLearners(cls.learners);
-        if (!ls.find(l => l.id === ui.learnerId)) ui.learnerId = ls[0] ? ls[0].id : null;
-        who += sel('fill-learner', 'Learner', ls.map(l => [l.id, Data.fullName(l, state.settings)]).concat([['__new', '+ Add a learner']]), ui.learnerId)
-          + `<input type="text" id="new-learner" class="fb-sel" hidden placeholder="New learner: DELA CRUZ, Juan P." aria-label="New learner’s name">`;
-      }
+      who = `<label class="pill-field"><span>Class</span><select id="fill-class">${options(syClasses().map(c => [c.id, className(c)]).concat([['__new', '+ Add another class']]), cls.id)}</select></label>`;
     } else if (kind === 'grade') {
-      const grades = [...new Set(syClasses().map(c => String(c.grade)).filter(Boolean))].sort((a2, b2) => a2 - b2);
+      const grades = [...new Set(syClasses().map(c => String(c.grade)).filter(Boolean))].sort((a, b) => a - b);
       if (!grades.includes(String(ui.grade))) ui.grade = grades[0] || '';
-      who = sel('fill-grade', 'Grade', grades.length ? grades.map(g => [g, 'Grade ' + g]) : [['', 'No classes yet']], ui.grade);
+      who = `<label class="pill-field"><span>Grade</span><select id="fill-grade">${options(grades.length ? grades.map(g => [g, 'Grade ' + g]) : [['', 'No classes yet']], ui.grade)}</select></label>`;
     }
-    const fitVal = ui.page.fit === false ? 'none' : ui.page.fit === true || ui.page.fit == null ? 'auto' : ui.page.fit;
-    const formMode = kind === 'none' || kind === 'learner' || (kind === 'class' && !ui.tableView);
-    const preview = formMode ? false : kind === 'class' ? ui.preview : true;
-    const bar = `
-      <div class="formbar">
-        <div class="fb-row">
-          <select id="file-pick" class="fb-sel fb-file" aria-label="Form file" title="Form file">${options(state.templates.filter(t => t.sheets.some(usable)).map(t => [t.id, t.name]).concat([['__upload', '+ Upload another form…']]), f.t.id)}</select>
-          <input type="file" id="tpl-file" hidden accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
-          ${who}
-          ${seg('period', PERIODS, ui.period)}
-          ${f.m.language ? `<span class="chip ok" title="Language of this form">${f.m.language}</span>` : seg('lang', LANGS, ui.lang)}
-          <span class="fb-grow"></span>
-          <div class="seg zoom" role="group" aria-label="Zoom">
-            <button type="button" data-act="zoom-out" title="Smaller">−</button>
-            <button type="button" data-act="zoom-fit" aria-pressed="${ui.fz === 'fit' || ui.fz == null}" title="Fit the page to the screen width">Fit</button>
-            <button type="button" data-act="zoom-in" title="Bigger">+</button>
-          </div>
-          <button class="btn primary" type="button" data-act="save-form">Save Excel</button>
-          ${canPrint ? '<button class="btn" type="button" data-act="print-form">Print</button>' : ''}
-          ${isDesktop ? '<button class="btn" type="button" data-act="open-form" title="Open the filled file in Excel">Excel</button>' : ''}
+    const fitVal = ui.page.fit == null ? 'none' : ui.page.fit === false ? 'none' : ui.page.fit === true ? 'width' : ui.page.fit;
+    const saveIcon = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v9m-4-4 4 4 4-4M4 15h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const head = `
+      <section class="work-head">
+        <div class="wh-title">
+          <p class="eyebrow">${esc(f.t.name)} · ${KIND_LABEL[kind]}</p>
+          <h1>${esc(f.m.sheetName)}</h1>
+        </div>
+        <div class="wh-actions">
+          <button class="btn primary big" type="button" data-act="${kind === 'learner' ? 'save-all' : 'save-form'}">${saveIcon}${kind === 'learner' ? 'Save a form for every learner' : 'Save filled form'}</button>
+          ${isDesktop ? '<button class="btn big" type="button" data-act="open-form">Open in Excel to print</button>' : ''}
           <details class="fb-more">
-            <summary class="btn">More</summary>
+            <summary class="btn big" aria-label="More options">More</summary>
             <div class="fb-menu stack">
-              <label class="field"><span>Size on paper</span><select id="pg-fit">${options([['auto', 'Automatic: best fit (recommended)'], ['page', 'Whole form on one page'], ['width', 'Fit to page width'], ['none', 'As set in the form']], fitVal)}</select></label>
-              <label class="field"><span>Orientation</span><select id="pg-orient">${options([['', 'Automatic'], ['portrait', 'Portrait'], ['landscape', 'Landscape']], ui.page.orient || '')}</select></label>
+              <label class="field"><span>Printing</span><select id="pg-fit">${options(FIT_OPTIONS, fitVal)}</select></label>
+              <label class="field"><span>Orientation</span><select id="pg-orient">${options([['', 'As in the form'], ['portrait', 'Portrait'], ['landscape', 'Landscape']], ui.page.orient || '')}</select></label>
               <label class="field"><span>Paper</span><select id="pg-paper">${options(PAPER, ui.page.paper || '')}</select></label>
-              ${kind === 'learner' ? '<button class="btn" type="button" data-act="save-all">Save all learners (.zip)</button>' : ''}
-              ${kind === 'class' ? `<button class="btn" type="button" data-act="toggle-table">${ui.tableView ? 'Type on the form' : 'Type in a table instead'}</button>` : ''}
-              ${kind === 'class' && ui.tableView ? `<button class="btn" type="button" data-act="toggle-preview">${ui.preview ? 'Hide printout' : 'Show printout'}</button>` : ''}
-              <button class="btn" type="button" data-act="open-sheet" data-tpl="${f.t.id}" data-i="${f.i}">Adjust this form</button>
-              <button class="btn" type="button" data-act="go-settings">Settings</button>
+              <button class="btn" type="button" data-act="open-sheet" data-tpl="${f.t.id}" data-i="${f.i}">Adjust how this form is read</button>
               <button class="btn danger" type="button" data-act="del-tpl" data-tpl="${f.t.id}">Remove this file</button>
             </div>
           </details>
         </div>
-        ${tabs.length > 1 ? `<div class="tabs" role="tablist">${tabs.map(x => `<button type="button" role="tab" class="tab" data-act="tab" data-key="${x.key}" aria-selected="${x.key === f.key}">${esc(x.m.sheetName)}</button>`).join('')}</div>` : ''}
-      </div>`;
-    const hint = kind === 'class' && !ui.tableView ? 'Type a name on an empty row to add a learner · click a tick box to mark it · totals fill in by themselves · Enter goes down, Tab goes right'
-      : 'Click any box on the form and type · Enter goes down, Tab goes right';
+      </section>
+      ${tabs.length > 1 ? `<nav class="sheet-tabs" role="tablist" aria-label="Forms in this file">${tabs.map(x => `<button type="button" role="tab" class="tab" data-act="tab" data-key="${x.key}" aria-selected="${x.key === f.key}">${esc(x.m.sheetName)}</button>`).join('')}</nav>` : ''}
+      <div class="controls">
+        ${who}
+        <div class="pill-field"><span>Period</span>${seg('period', PERIODS, ui.period)}</div>
+        <div class="pill-field"><span>Language</span>${f.m.language ? `<b class="lang-tag">${f.m.language}</b>` : seg('lang', LANGS, ui.lang)}</div>
+        <span id="save-note" class="muted small"></span>
+      </div>
+      <div id="pr-warn"></div>`;
     let body = '';
-    if (kind === 'learner' && !ui.learnerId) body = `<div class="notice ok"><b>One page per learner.</b> Choose <b>+ Add a learner</b> in the bar above, then type on the form.</div>`;
-    else if (formMode) body = foundBanner(f) + `<p class="fb-hint">${hint}<span id="save-note"></span></p><div class="formview-wrap" id="formview"><div class="empty">Opening the form…</div></div>`;
-    else if (kind === 'class') body = fillClass(f, lang);
-    else body = `<p class="fb-hint">${kind === 'grade' ? 'Filled in automatically from your sections' : 'Filled in automatically from all classes'} for ${esc(PERIOD_LABEL[ui.period])}, ${esc(lang)}. Other teachers’ sections: More › Settings › Add a colleague’s classes.<span id="save-note"></span></p>`;
-    return `
-      ${bar}
-      <div id="pr-warn"></div>
-      ${body}
-      <div class="preview-wrap" id="preview"${preview ? '' : ' hidden'}><div class="empty">Preparing preview…</div></div>`;
+    if (kind === 'class') body = foundBanner(f) + statStrip(f, lang) + detailsPanel(f) + fillClass(f, lang, true);
+    else if (kind === 'grade' || kind === 'school') body = detailsPanel(f) + summaryCard(f, lang);
+    else if (kind === 'learner') body = `<div class="card note"><h2>One form per learner</h2><p>This form is filled once for each learner in the class, using their name and the details below. <b>Save a form for every learner</b> gives you one Excel file per learner in a .zip.</p></div>` + detailsPanel(f);
+    else body = `<div class="card note"><h2>This sheet has no learner table the app can fill yet</h2><p>The details the app recognised are below and will be written into the form. Fill in the rest in Excel after saving. If this sheet should be filled by the app, use <b>More › Adjust how this form is read</b>.</p></div>` + detailsPanel(f);
+    return head + body;
+  }
+
+  // counts at a glance
+  function statStrip(f, lang) {
+    const cls = currentClass(true);
+    const hasLevel = f.m.lists.some(l => l.columns.some(c => c.key === 'a.level'));
+    const hasFlags = f.m.lists.some(l => l.columns.some(c => c.key === 'a.struggling' || c.key === 'a.nonReader'));
+    const n = { all: cls.learners.length, M: 0, F: 0, Independent: 0, Instructional: 0, Frustration: 0, struggling: 0, nonReader: 0, entered: 0 };
+    for (const l of cls.learners) {
+      if (l.sex === 'M') n.M++; else if (l.sex === 'F') n.F++;
+      const r = Data.result(state, l.id, ui.period, lang);
+      if (r.level) n[r.level]++;
+      if (r.struggling) n.struggling++;
+      if (r.nonReader) n.nonReader++;
+      if (r.level || r.nonReader || Object.values(r.x || {}).some(v => v !== '' && v != null && v !== false)) n.entered++;
+    }
+    const stat = (num, label, cls2 = '') => `<div class="stat ${cls2}"><b>${num}</b><span>${label}</span></div>`;
+    return `<div class="stats">
+      ${stat(n.all, `Learners${n.M || n.F ? ` · ${n.M} M, ${n.F} F` : ''}`)}
+      ${hasLevel ? stat(n.Independent, 'Independent', 'i') + stat(n.Instructional, 'Instructional', 'n') + stat(n.Frustration, 'Frustration', 'f') : stat(n.entered, 'With entries')}
+      ${hasFlags ? stat(n.struggling, 'Struggling readers') + stat(n.nonReader, 'Non-readers') : ''}
+    </div>`;
+  }
+
+  // what a grade level or school summary will contain
+  function summaryCard(f, lang) {
+    const classes = syClasses();
+    const groups = f.m.kind === 'grade'
+      ? classes.filter(c => String(c.grade) === String(ui.grade)).map(c => ({ label: c.section || '(no section)', learners: c.learners }))
+      : [...new Set(classes.map(c => String(c.grade)).filter(Boolean))].sort((a, b) => a - b).map(g => ({ label: 'Grade ' + g, learners: classes.filter(c => String(c.grade) === g).flatMap(c => c.learners) }));
+    const count = (ls, test) => ls.filter(l => test(Data.result(state, l.id, ui.period, lang), l)).length;
+    const rows = groups.map(g => `<tr><th scope="row">${esc(g.label)}</th>
+      <td>${count(g.learners, (r, l) => l.sex === 'M')}</td><td>${count(g.learners, (r, l) => l.sex === 'F')}</td><td class="strong">${g.learners.length}</td>
+      <td class="lv-i">${count(g.learners, r => r.level === 'Independent')}</td><td class="lv-n">${count(g.learners, r => r.level === 'Instructional')}</td><td class="lv-f">${count(g.learners, r => r.level === 'Frustration')}</td>
+      <td>${count(g.learners, r => r.struggling)}</td><td>${count(g.learners, r => r.nonReader)}</td></tr>`).join('');
+    return `<div class="card">
+      <div class="card-head"><h2>${f.m.kind === 'grade' ? 'Sections in this grade' : 'Grade levels in the school'}</h2><p class="muted small">Counted from the class forms for ${esc(PERIOD_LABEL[ui.period])}, ${esc(lang)}. Other teachers’ classes: Settings › Add a colleague’s classes.</p></div>
+      <div class="table-wrap"><table class="grid sum">
+        <thead><tr><th rowspan="2">${f.m.kind === 'grade' ? 'Section' : 'Grade'}</th><th colspan="3">Enrolment</th><th colspan="3">Reading level</th><th rowspan="2">Struggling</th><th rowspan="2">Non-readers</th></tr>
+        <tr><th>M</th><th>F</th><th>Total</th><th>Independent</th><th>Instructional</th><th>Frustration</th></tr></thead>
+        <tbody>${rows || `<tr><td colspan="9" class="empty">No class forms filled in yet${f.m.kind === 'grade' ? ' for this grade' : ''}.</td></tr>`}</tbody>
+      </table></div>
+    </div>`;
   }
 
   // ---------- typing straight on the form ----------
@@ -345,8 +390,9 @@
       if (k === 'class.grade') return `<label class="field"><span>${label}</span><select id="${id}" data-detail="${k}">${options([['', '–']].concat(GRADES.map(g => [g, 'Grade ' + g])), val)}</select></label>`;
       return `<label class="field"><span>${label}</span><input type="text" id="${id}" data-detail="${k}" value="${esc(val)}"${k === 'date' ? ` placeholder="${esc(todayText())}"` : ''}></label>`;
     }).join('');
-    return `<div class="panel stack"><h2>Form details</h2><div class="grid2">${inputs}</div>
-      <p class="muted small">These fill the top of the form. School details are remembered for all your forms.</p></div>`;
+    return `<div class="card">
+      <div class="card-head"><h2>Form details</h2><p class="muted small">These fill the top of the form. School details are remembered for all your forms.</p></div>
+      <div class="grid2">${inputs}</div></div>`;
   }
 
   // ---------- the entry table ----------
@@ -425,9 +471,9 @@
     }).join('');
   }
 
-  function fillClass(f, lang) {
+  function fillClass(f, lang, bare) {
     const cls = currentClass(true);
-    let html = detailsPanel(f) + foundBanner(f);
+    let html = bare ? '' : detailsPanel(f) + foundBanner(f);
     f.m.lists.forEach((list, li) => {
       const cols = list.columns.slice().sort((a, b) => a.col - b.col);
       const hasSexParts = list.parts.some(p => p.sex);
@@ -444,9 +490,11 @@
         });
         rows += `<tr class="addrow"><td colspan="${cols.length + 1}"><input type="text" class="add-name" id="add-${li}-${p.sex || 'all'}" data-li="${li}" data-sex="${p.sex || ''}" placeholder="+ Type a learner’s name here and press Enter (or paste a list from Excel)"></td></tr>`;
       }
-      html += `<div class="panel flush"><div class="table-wrap"><table class="grid entry" data-li="${li}"><thead>${headRows(cols)}</thead><tbody>${rows}</tbody></table></div></div>`;
+      html += `<div class="card flush">
+        <div class="card-head"><h2>Learners</h2><p class="muted small">Enter goes down a column · paste names or scores copied from Excel into any cell · grey cells fill themselves</p></div>
+        <div class="table-wrap"><table class="grid entry" data-li="${li}"><thead>${headRows(cols)}</thead><tbody>${rows}</tbody></table></div>
+      </div>`;
     });
-    html += `<p class="muted small">Tip: press Enter to go down a column. You can paste names or scores copied from Excel into any cell.</p>`;
     return html;
   }
 
@@ -591,7 +639,8 @@
   // the page options used both on screen and in the saved file
   function pageSetup(f) {
     const kind = f.m.kind;
-    const fit = ui.page.fit === false ? 'none' : ui.page.fit === true || ui.page.fit == null ? 'auto' : ui.page.fit;
+    // by default the saved file keeps the template's own print settings
+    const fit = ui.page.fit == null || ui.page.fit === false ? 'none' : ui.page.fit === true ? 'width' : ui.page.fit;
     return { fit: fit === 'none' ? null : fit, orientation: ui.page.orient || (fit === 'auto' ? null : (kind === 'grade' || kind === 'school') ? 'landscape' : null), paper: ui.page.paper ? +ui.page.paper : null };
   }
   // shrink the pages so a whole page width fits the screen
