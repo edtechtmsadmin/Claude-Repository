@@ -275,7 +275,7 @@
       if (after) {
         const v = singleValue(after.key, state, ctx);
         if (v === '' || v == null) warnings.push(`No value for “${after.label}” (cell ${ref}).`);
-        else text = text.replace(/^(\s*[^:]*:\s*).*$/s, (m, head) => head + v);
+        else text = text.replace(/^(\s*[^:]*:)(\s*).*$/s, (m, head, sp) => head + (sp || ' ') + v);
       }
       const blanks = fs.filter(f => f.mode === 'blank').sort((a, b) => b.blankIndex - a.blankIndex);
       for (const f of blanks) {

@@ -68,39 +68,47 @@ p { margin: 0; }
 .num { font-variant-numeric: tabular-nums; }
 
 /* ---------- shell ---------- */
-.app { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 100%; }
-.rail {
-  position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; height: 100vh;
-  display: flex; flex-direction: column; gap: 2px; padding: 18px 12px;
-  background: var(--surface); border-right: 1px solid var(--line);
+.app { min-height: 100%; }
+.topbar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 28px; background: var(--surface); border-bottom: 1px solid var(--line);
 }
-.brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 18px; }
+.brand { display: flex; align-items: center; gap: 10px; }
 .brand-mark {
   display: grid; place-items: center; width: 38px; height: 38px; border-radius: 9px;
   background: var(--accent); color: var(--accent-ink); font: 700 .78rem var(--mono); letter-spacing: .04em;
 }
 .brand-name { font-weight: 700; line-height: 1.1; }
 .brand-sy { font-size: .8rem; color: var(--muted); }
-.nav-item {
-  text-align: left; border: 0; background: none; padding: 9px 12px; border-radius: 7px; cursor: pointer; color: var(--ink);
-}
-.nav-item:hover { background: var(--surface-2); }
-.nav-item[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
-.rail-foot { margin-top: auto; font-size: .78rem; color: var(--muted); padding: 8px; }
-.main { min-width: 0; padding-block: 24px 48px; padding-inline: 28px; }
-#view { display: flex; flex-direction: column; gap: 20px; max-width: 1280px; }
-
+.main { min-width: 0; padding-block: 20px 48px; padding-inline: 28px; }
+#view { display: flex; flex-direction: column; gap: 16px; max-width: 1280px; margin: 0 auto; }
+.foot { max-width: 1280px; margin: 24px auto 0; }
 @media (max-width: 820px) {
-  .app { grid-template-columns: 1fr; }
-  .rail {
-    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; height: auto; flex-direction: row; overflow-x: auto;
-    padding: 8px 16px; border-right: 0; border-bottom: 1px solid var(--line); align-items: center;
-  }
-  .brand { padding: 0 8px 0 0; }
-  .brand-name, .brand-sy, .rail-foot { display: none; }
-  .nav-item { white-space: nowrap; }
+  .topbar { padding: 8px 16px; }
   .main { padding-inline: 16px; }
 }
+
+/* form file + one tab per form */
+.filebar { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.filebar .field > span { font-weight: 600; font-size: .85rem; color: var(--muted); }
+.filebar select { font-size: 1.05rem; font-weight: 700; max-width: 640px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; border-bottom: 2px solid var(--line); padding-bottom: 0; }
+.tab {
+  border: 1px solid var(--line); border-bottom: 0; background: var(--surface-2); color: var(--muted); font-weight: 700;
+  padding: 9px 16px; border-radius: 8px 8px 0 0; cursor: pointer; margin-bottom: -2px;
+}
+.tab:hover { color: var(--ink); }
+.tab[aria-selected="true"] { background: var(--surface); color: var(--accent); border-color: var(--line-strong); box-shadow: inset 0 3px 0 var(--accent); }
+.adjust-link { text-align: right; }
+.pages-note { margin: 0 0 10px; font-weight: 600; color: #3d4a44; font-size: .9rem; }
+
+/* typing straight on the form */
+.notice.ok { border-left-color: var(--accent); }
+.formview-wrap { background: #e9ecea; border: 1px solid var(--line); border-radius: var(--r); overflow: auto; max-height: 82vh; padding: 16px; }
+#formview [contenteditable] { outline: none; min-height: 1em; cursor: text; }
+#formview td:hover { box-shadow: inset 0 0 0 999px rgba(31, 95, 191, .06); }
+#formview td:focus-within { outline: 2px solid #1f5fbf; outline-offset: -2px; box-shadow: inset 0 0 0 999px rgba(31, 95, 191, .08); }
+td.mk-typed { box-shadow: inset 0 0 0 999px rgba(45, 122, 76, .14); }
 
 /* ---------- common pieces ---------- */
 .head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 20px; }
@@ -279,9 +287,15 @@ table.grid .w-lrn { width: 150px; } .w-sex { width: 74px; } .w-grade { width: 11
 table.xl-sheet { border-collapse: collapse; table-layout: fixed; font-family: Calibri, Carlito, Arial, sans-serif; font-size: 14.7px; color: #000; }
 table.xl-sheet td { padding: 0 2px; overflow: hidden; white-space: nowrap; line-height: 1.15; position: relative; }
 table.xl-sheet .xl-c { overflow: hidden; text-overflow: clip; }
+table.xl-sheet td[style*="overflow:visible"] > .xl-c { overflow: visible; }
 table.xl-sheet .xl-wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
 table.xl-sheet tr.xl-hidden { display: none; }
 .xl-img { position: absolute; pointer-events: none; }
+/* printed pages: real paper size, margins and page breaks */
+.xl-pages { display: flex; flex-direction: column; align-items: center; gap: 28px; padding: 8px 0 12px; }
+.xl-page { position: relative; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .25), 0 6px 18px rgba(0, 0, 0, .12); flex: none; }
+.xl-page-area { position: absolute; transform-origin: 0 0; }
+.xl-page-no { position: absolute; left: 0; right: 0; bottom: -22px; text-align: center; font: 600 12px/1 var(--font); color: var(--muted); }
 .sheet-view table.xl-sheet td { cursor: pointer; }
 .sheet-view table.xl-sheet td:hover { outline: 1px solid #1d6b57; outline-offset: -1px; }
 td.mk-sure { box-shadow: inset 0 0 0 999px rgba(45, 122, 76, .22); outline: 2px solid #2d7a4c; outline-offset: -2px; }
@@ -302,7 +316,7 @@ td.mk-fill { box-shadow: inset 0 0 0 999px rgba(31, 95, 191, .10); }
 </head>
 <body>
 <div class="app">
-  <nav class="rail" aria-label="Main">
+  <header class="topbar">
     <div class="brand">
       <span class="brand-mark" aria-hidden="true">IRI</span>
       <div>
@@ -310,15 +324,13 @@ td.mk-fill { box-shadow: inset 0 0 0 999px rgba(31, 95, 191, .10); }
         <div class="brand-sy" id="brand-sy"></div>
       </div>
     </div>
-    <button class="nav-item" data-view="fill" type="button">Fill in forms</button>
-    <button class="nav-item" data-view="templates" type="button">My forms</button>
-    <button class="nav-item" data-view="classes" type="button">Classes</button>
-    <button class="nav-item" data-view="settings" type="button">Settings</button>
-    <div class="rail-foot" id="rail-foot"></div>
-  </nav>
+    <div class="topbar-actions">
+      <button class="btn quiet" type="button" data-act="go-settings" id="settings-btn">Settings</button>
+    </div>
+  </header>
   <main class="main">
-    <div id="banner"></div>
     <div id="view"></div>
+    <p class="foot muted small" id="rail-foot"></p>
   </main>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
@@ -608,9 +620,23 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     for (const m of merges) { if (m.r2 > maxR) maxR = m.r2; if (m.c2 > maxC) maxC = m.c2; }
 
     const ps = el(doc, 'pageSetup');
+    const pm = el(doc, 'pageMargins');
+    const po = el(doc, 'printOptions');
+    const spr = el(doc, 'pageSetUpPr');
+    const brk = name => els(el(doc, name), 'brk').map(b => +b.getAttribute('id')).filter(n => n > 0);
+    const num = (node, a, d) => node && node.getAttribute(a) != null && node.getAttribute(a) !== '' ? parseFloat(node.getAttribute(a)) : d;
     const page = {
       orientation: ps ? ps.getAttribute('orientation') || 'portrait' : 'portrait',
       paperSize: ps ? +(ps.getAttribute('paperSize') || 9) : 9,
+      scale: num(ps, 'scale', 100),
+      fitToPage: !!spr && (spr.getAttribute('fitToPage') === '1' || spr.getAttribute('fitToPage') === 'true'),
+      fitToWidth: num(ps, 'fitToWidth', 1),
+      fitToHeight: num(ps, 'fitToHeight', 1),
+      margins: { left: num(pm, 'left', 0.7), right: num(pm, 'right', 0.7), top: num(pm, 'top', 0.75), bottom: num(pm, 'bottom', 0.75) },
+      hCenter: !!po && po.getAttribute('horizontalCentered') === '1',
+      vCenter: !!po && po.getAttribute('verticalCentered') === '1',
+      rowBreaks: brk('rowBreaks'),
+      colBreaks: brk('colBreaks'),
     };
 
     // pictures (logos) from the sheet's drawing part
@@ -712,36 +738,48 @@ https://github.com/nodeca/pako/blob/main/LICENSE
    * heights, merges, fonts, fills, borders and pictures.
    * opts.marks: {ref: className} to highlight cells (mapping view)
    * opts.values: {ref: text} to show pending values without saving
+   * opts.editable: let the user type into every cell that is not a formula
    */
+  function printArea(sheet) {
+    return sheet.printArea || { r1: 1, c1: 1, r2: Math.max(sheet.maxR, 1), c2: Math.max(sheet.maxC, 1) };
+  }
+
+  /* opts.range: {r1,c1,r2,c2} draws only that part (one printed page) */
   function renderSheet(sheet, opts = {}) {
-    const area = sheet.printArea || { r1: 1, c1: 1, r2: Math.max(sheet.maxR, 1), c2: Math.max(sheet.maxC, 1) };
-    const r1 = 1, c1 = 1;
-    const r2 = Math.min(area.r2, 400), c2 = Math.min(area.c2, 80);
+    const area = opts.range || Object.assign({}, printArea(sheet), { r1: 1, c1: 1 });
+    const r1 = area.r1, c1 = area.c1;
+    const r2 = Math.min(area.r2, r1 + 600), c2 = Math.min(area.c2, c1 + 100);
     const marks = opts.marks || {};
     const colW = [];
-    let html = '<table class="xl-sheet" cellspacing="0" cellpadding="0"><colgroup>';
-    let totalW = 0;
-    for (let c = c1; c <= c2; c++) { const w = colPx(sheet, c); colW[c] = w; totalW += w; html += `<col style="width:${w}px">`; }
-    html += '</colgroup><tbody>';
+    let totalW = 0, colgroup = '';
+    for (let c = c1; c <= c2; c++) { const w = colPx(sheet, c); colW[c] = w; totalW += w; colgroup += `<col style="width:${w}px">`; }
+    let html = `<table class="xl-sheet" cellspacing="0" cellpadding="0" style="width:${totalW}px"><colgroup>${colgroup}</colgroup><tbody>`;
+    // merges clipped to the drawn range; a merge cut by a page break continues as an empty box
+    const starts = new Map();
     const covered = new Set();
     for (const m of sheet.merges) {
-      for (let r = m.r1; r <= m.r2; r++) for (let c = m.c1; c <= m.c2; c++) if (r !== m.r1 || c !== m.c1) covered.add(r + ':' + c);
+      const mr1 = Math.max(m.r1, r1), mc1 = Math.max(m.c1, c1), mr2 = Math.min(m.r2, r2), mc2 = Math.min(m.c2, c2);
+      if (mr1 > mr2 || mc1 > mc2) continue;
+      starts.set(mr1 + ':' + mc1, { m, mr1, mc1, mr2, mc2, cont: mr1 !== m.r1 || mc1 !== m.c1 });
+      for (let r = mr1; r <= mr2; r++) for (let c = mc1; c <= mc2; c++) if (r !== mr1 || c !== mc1) covered.add(r + ':' + c);
     }
-    const rowTop = []; let y = 0;
+    let totalH = 0;
     for (let r = r1; r <= r2; r++) {
       const h = rowPx(sheet, r);
-      rowTop[r] = y; y += h;
+      totalH += h;
       html += `<tr style="height:${h}px"${h === 0 ? ' class="xl-hidden"' : ''}>`;
       for (let c = c1; c <= c2; c++) {
         if (covered.has(r + ':' + c)) continue;
         const ref = makeRef(r, c);
-        const m = sheet.merges.find(mm => mm.r1 === r && mm.c1 === c);
-        const rs = m ? Math.min(m.r2, r2) - r + 1 : 1;
-        const cs = m ? Math.min(m.c2, c2) - c + 1 : 1;
-        const st = styleOf(sheet, r, c);
+        const mm = starts.get(r + ':' + c);
+        const m = mm ? mm.m : null;
+        const rs = mm ? mm.mr2 - r + 1 : 1;
+        const cs = mm ? mm.mc2 - c + 1 : 1;
+        const cont = mm && mm.cont;
+        const st = cont ? styleOf(sheet, m.r1, m.c1) : styleOf(sheet, r, c);
         const css = [];
-        let txt = opts.values && ref in opts.values ? opts.values[ref] : cellText(sheet, r, c);
-        const cell = sheet.cells.get(ref);
+        const cell = cont ? null : sheet.cells.get(ref);
+        const txt = cont ? '' : (opts.values && ref in opts.values ? opts.values[ref] : cellText(sheet, r, c));
         if (st) {
           const f = st.font;
           if (f) {
@@ -755,8 +793,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           if (st.fill) css.push(`background:${st.fill}`);
           const b = st.border || {};
           // for merged cells, the right/bottom edge comes from the far cells
-          const right = m ? (styleOf(sheet, r, m.c2)?.border?.right) : b.right;
-          const bottom = m ? (styleOf(sheet, m.r2, c)?.border?.bottom) : b.bottom;
+          const right = m ? (styleOf(sheet, m.r1, m.c2)?.border?.right) : b.right;
+          const bottom = m ? (styleOf(sheet, m.r2, m.c1)?.border?.bottom) : b.bottom;
           const sides = { left: b.left, top: b.top, right, bottom };
           for (const k in sides) if (sides[k]) css.push(`border-${k}:${BORDER_CSS[sides[k].style] || '1px solid'} ${sides[k].color}`);
           const h = st.h || (cell && cell.type === 'number' ? 'right' : null);
@@ -768,30 +806,108 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           css.push('vertical-align:bottom');
           if (cell && cell.type === 'number') css.push('text-align:right');
         }
+        // like Excel, text runs over into empty cells on its right
+        const hAlign = st && st.h;
+        if (!mm && txt && !(st && st.wrap) && (!hAlign || hAlign === 'left' || hAlign === 'general') && !(cell && cell.type === 'number')) {
+          const nextEmpty = c < c2 && !sheet.cells.get(makeRef(r, c + 1))?.value && !(opts.values && opts.values[makeRef(r, c + 1)]) && !mergeAt(sheet, r, c + 1);
+          if (nextEmpty) css.push('overflow:visible;position:relative;z-index:1');
+        }
         const cls = marks[ref] ? ` class="${marks[ref]}"` : '';
         const tip = opts.titles && opts.titles[ref] ? ` title="${esc(opts.titles[ref])}"` : '';
         const vert = st && st.rotate === 255 ? ' xl-vert' : '';
-        html += `<td data-ref="${ref}"${rs > 1 ? ` rowspan="${rs}"` : ''}${cs > 1 ? ` colspan="${cs}"` : ''}${cls}${tip} style="${css.join(';')}"><div class="xl-c${st && st.wrap ? ' xl-wrap' : ''}${vert}">${esc(txt)}</div></td>`;
+        const editable = opts.editable && !cont && !(cell && cell.formula);
+        html += `<td${cont ? '' : ` data-ref="${ref}"`}${rs > 1 ? ` rowspan="${rs}"` : ''}${cs > 1 ? ` colspan="${cs}"` : ''}${cls}${tip} style="${css.join(';')}"><div class="xl-c${st && st.wrap ? ' xl-wrap' : ''}${vert}"${editable ? ' contenteditable="true" spellcheck="false"' : ''}>${esc(txt)}</div></td>`;
       }
       html += '</tr>';
     }
     html += '</tbody></table>';
+    // pictures, placed from the sheet origin and shifted to this range
+    const colLeft = c => { let x = 0; for (let i = 1; i < c; i++) x += colPx(sheet, i); return x; };
+    const rowTop = r => { let y = 0; for (let i = 1; i < r; i++) y += rowPx(sheet, i); return y; };
+    const ox = colLeft(c1), oy = rowTop(r1);
     let imgs = '';
-    const colLeft = []; let x = 0;
-    for (let c = c1; c <= c2 + 1; c++) { colLeft[c] = x; x += colW[c] || 0; }
     for (const im of sheet.images) {
       if (!im.from) continue;
-      const left = (colLeft[im.from.col + 1] || 0) + im.from.colOff / 9525;
-      const top = (rowTop[im.from.row + 1] || 0) + im.from.rowOff / 9525;
+      const left = colLeft(im.from.col + 1) + im.from.colOff / 9525 - ox;
+      const top = rowTop(im.from.row + 1) + im.from.rowOff / 9525 - oy;
       let w, h;
       if (im.to) {
-        w = (colLeft[im.to.col + 1] || 0) + im.to.colOff / 9525 - left;
-        h = (rowTop[im.to.row + 1] || 0) + im.to.rowOff / 9525 - top;
+        w = colLeft(im.to.col + 1) + im.to.colOff / 9525 - ox - left;
+        h = rowTop(im.to.row + 1) + im.to.rowOff / 9525 - oy - top;
       }
       if ((!w || !h) && im.ext) { w = im.ext.cx / 9525; h = im.ext.cy / 9525; }
+      if (left + w < 0 || top + h < 0 || left > totalW || top > totalH) continue;
       imgs += `<img class="xl-img" alt="" src="${im.src}" style="left:${left}px;top:${top}px;width:${w}px;height:${h}px">`;
     }
-    return `<div class="xl-wrapper" style="width:${totalW}px">${html}${imgs}</div>`;
+    return `<div class="xl-wrapper" style="width:${totalW}px;height:${totalH}px">${html}${imgs}</div>`;
+  }
+
+  // ---------- printed pages ----------
+  // paper sizes in inches (Excel paperSize codes)
+  const PAPER_IN = { 1: [8.5, 11], 5: [8.5, 14], 8: [11.69, 16.54], 9: [8.27, 11.69], 11: [5.83, 8.27], 14: [8.5, 13] };
+
+  /* Work out the pages exactly as the saved file prints them.
+   * override = the Page setup chosen in the app: {fit, orientation, paper}
+   */
+  function paginate(sheet, override = {}) {
+    const pg = Object.assign({}, sheet.page);
+    if (override.fit) { pg.fitToPage = true; pg.fitToWidth = 1; pg.fitToHeight = 0; }
+    if (override.orientation) pg.orientation = override.orientation;
+    if (override.paper) pg.paperSize = override.paper;
+    let [w, h] = PAPER_IN[pg.paperSize] || PAPER_IN[9];
+    if (pg.orientation === 'landscape') [w, h] = [h, w];
+    const DPI = 96;
+    const pageW = w * DPI, pageH = h * DPI;
+    const mg = pg.margins;
+    const printW = pageW - (mg.left + mg.right) * DPI;
+    const printH = pageH - (mg.top + mg.bottom) * DPI;
+    const area = printArea(sheet);
+    const cw = [], rh = [];
+    let totalW = 0, totalH = 0;
+    for (let c = area.c1; c <= area.c2; c++) { cw[c] = colPx(sheet, c); totalW += cw[c]; }
+    for (let r = area.r1; r <= area.r2; r++) { rh[r] = rowPx(sheet, r); totalH += rh[r]; }
+    let scale = (pg.scale || 100) / 100;
+    if (pg.fitToPage) {
+      const sx = pg.fitToWidth > 0 ? (printW * pg.fitToWidth) / totalW : Infinity;
+      const sy = pg.fitToHeight > 0 ? (printH * pg.fitToHeight) / totalH : Infinity;
+      scale = Math.min(1, sx, sy);
+    }
+    scale = Math.max(0.1, Math.min(4, scale));
+    const cut = (from, to, size, limit, manual) => {
+      const out = [];
+      let start = from, used = 0;
+      for (let i = from; i <= to; i++) {
+        const sz = size[i] * scale;
+        if (used + sz > limit + 0.5 && i > start) { out.push([start, i - 1]); start = i; used = 0; }
+        used += sz;
+        if (manual.includes(i) && i < to) { out.push([start, i]); start = i + 1; used = 0; }
+      }
+      if (start <= to) out.push([start, to]);
+      return out;
+    };
+    const rowsets = cut(area.r1, area.r2, rh, printH, pg.rowBreaks || []);
+    const colsets = cut(area.c1, area.c2, cw, printW, pg.colBreaks || []);
+    const pages = [];
+    // Excel prints down, then over
+    for (const [c1, c2] of colsets) for (const [r1, r2] of rowsets) pages.push({ r1, r2, c1, c2 });
+    return { pages, scale, pageW, pageH, printW, printH, margins: mg, hCenter: pg.hCenter, vCenter: pg.vCenter, dpi: DPI };
+  }
+
+  function renderPages(sheet, override, opts = {}) {
+    const lay = paginate(sheet, override);
+    const n = lay.pages.length;
+    const html = lay.pages.map((rg, i) => {
+      let w = 0, h = 0;
+      for (let c = rg.c1; c <= rg.c2; c++) w += colPx(sheet, c);
+      for (let r = rg.r1; r <= rg.r2; r++) h += rowPx(sheet, r);
+      const left = lay.margins.left * lay.dpi + (lay.hCenter ? Math.max(0, (lay.printW - w * lay.scale) / 2) : 0);
+      const top = lay.margins.top * lay.dpi + (lay.vCenter ? Math.max(0, (lay.printH - h * lay.scale) / 2) : 0);
+      return `<div class="xl-page" style="width:${lay.pageW}px;height:${lay.pageH}px">
+        <div class="xl-page-area" style="left:${left}px;top:${top}px;transform:scale(${lay.scale})">${renderSheet(sheet, Object.assign({}, opts, { range: rg }))}</div>
+        <div class="xl-page-no">Page ${i + 1} of ${n}</div>
+      </div>`;
+    }).join('');
+    return { html: `<div class="xl-pages">${html}</div>`, count: n, layout: lay };
   }
 
   // ---------- filling ----------
@@ -1027,7 +1143,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   global.XL = {
-    computeFormulas,
+    computeFormulas, paginate, renderPages,
     loadWorkbook, renderSheet, fillWorkbook,
     parseRef, makeRef, colToNum, numToCol, parseRange,
     cellText, mergeAt, hasBorder, rowPx, colPx, styleOf,
@@ -1069,7 +1185,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     'sy': ['school year', 'sy', 's y', 'taong panuruan'],
     'period': ['test period', 'assessment period', 'period', 'type of test', 'testing period'],
     'language': ['language', 'wika'],
-    'class.gradeSection': ['grade and section', 'grade section', 'grade level and section', 'baitang at pangkat'],
+    'class.gradeSection': ['grade and section', 'grade section', 'grade level and section', 'baitang at pangkat', 'baitang pangkat', 'grade section level'],
     'class.grade': ['grade', 'grade level', 'baitang', 'grade lvl'],
     'class.section': ['section', 'pangkat'],
     'class.adviser': ['teacher', 'name of teacher', 'class adviser', 'adviser', 'assessor', 'guro', 'name of assessor', 'tester', 'name of adviser'],
@@ -1078,7 +1194,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     'count.male': ['male', 'boys', 'no of male', 'lalaki', 'no of males'],
     'count.female': ['female', 'girls', 'babae', 'no of female', 'no of females'],
     'count.total': ['total', 'total enrolment', 'total enrollment', 'enrolment', 'enrollment'],
-    'learner.name': ['name of learner', 'learner s name', 'learners name', 'name of pupil', 'name of student', 'pangalan ng mag aaral', 'name'],
+    'learner.name': ['name of learner', 'learner s name', 'learners name', 'name of pupil', 'name of student', 'pangalan ng mag aaral', 'name', 'pangalan', 'pupil s name', 'student s name'],
     'learner.lrn': ['lrn', 'learner reference number'],
     'learner.sex': ['sex', 'gender', 'kasarian'],
   };
@@ -1164,7 +1280,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         const cell = sheet.cells.get(makeRef(r, c));
         if (!cell || cell.type !== 'string') continue;
         const n = norm(cell.value);
-        if (!COLUMN['learner.name'].includes(n)) continue;
+        if (!COLUMN['learner.name'].includes(n) || /:\s*$/.test(cell.value)) continue; // "Pangalan:" is a label, not a column
         const list = buildList(sheet, r, c);
         if (list) {
           lists.push(list);
@@ -1250,6 +1366,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }
     if (cur) parts.push(cur);
     if (!parts.length) return null;
+    // a learner table has several rows and at least one column besides the name
+    const rowCount = parts.reduce((a, p) => a + p.last - p.first + 1, 0);
+    if (rowCount < 3 || columns.filter(c => c.key && c.key !== 'learner.name' && c.key !== 'row.no').length < 1) return null;
     const lastRow = parts[parts.length - 1].last;
 
     // extra columns: link totals to the scores they add up, and "< 27" checks to the total
@@ -1525,6 +1644,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         if (t && (endsColon || t.bordered) && !taken.has(t.ref)) {
           add({ ref: t.ref, key: hit.key, mode: 'value', conf: hit.conf * (t.bordered ? 0.95 : 0.8) });
           taken.add(t.ref);
+        } else if (endsColon && !taken.has(cell.ref)) {
+          // "School:" in a wide cell with no box next to it: write after the colon
+          add({ ref: cell.ref, key: hit.key, mode: 'after', current: '', conf: hit.conf * 0.8 });
+          taken.add(cell.ref);
         }
       }
     }
@@ -1585,6 +1708,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const fields = findFields(sheet, tableRows);
 
     let kind = 'none';
+    const notes = /instruction|direction|guide|read ?me|legend|how to/i.test(sheet.name);
     if (lists.length) kind = 'class';
     else if (summaries.length) kind = summaries[0].groupBy === 'section' ? 'grade' : 'school';
     else if (fields.some(f => f.key === 'learner.name')) kind = 'learner';
@@ -1598,7 +1722,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }
     return {
       sheetPath: sheet.path, sheetName: sheet.name, sheetIndex: sheet.index, hidden: sheet.hidden,
-      kind, language, fields, lists, summaries, checked: false,
+      kind, language, fields, lists, summaries, checked: false, notes,
     };
   }
 
@@ -1884,7 +2008,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       if (after) {
         const v = singleValue(after.key, state, ctx);
         if (v === '' || v == null) warnings.push(`No value for “${after.label}” (cell ${ref}).`);
-        else text = text.replace(/^(\s*[^:]*:\s*).*$/s, (m, head) => head + v);
+        else text = text.replace(/^(\s*[^:]*:)(\s*).*$/s, (m, head, sp) => head + (sp || ' ') + v);
       }
       const blanks = fs.filter(f => f.mode === 'blank').sort((a, b) => b.blankIndex - a.blankIndex);
       for (const f of blanks) {
@@ -2123,7 +2247,7 @@ window.SAMPLE_TEMPLATES = {
 
   let state = Data.emptyState();
   const tplCache = new Map();   // template id -> {buf, wb}
-  const ui = { view: 'fill', form: null, classId: null, grade: null, period: 'BOSY', lang: 'Filipino', preview: false, page: {}, tplId: null, sheetIdx: 0, sel: null, zoom: 0.8 };
+  const ui = { view: 'fill', form: null, classId: null, grade: null, period: 'BOSY', lang: 'Filipino', preview: true, page: {}, tplId: null, sheetIdx: 0, sel: null, zoom: 0.8 };
 
   // ---------- persistence ----------
   let saveTimer = null;
@@ -2201,10 +2325,22 @@ window.SAMPLE_TEMPLATES = {
   const b64ToBuf = b64 => { const bin = atob(b64); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u.buffer; };
   const todayText = () => new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
+  const usable = m => !m.notes && !m.hidden;
   function allForms() {
     const out = [];
-    for (const t of state.templates) t.sheets.forEach((m, i) => { if (m.kind !== 'none') out.push({ t, m, i, key: t.id + ':' + i }); });
+    for (const t of state.templates) t.sheets.forEach((m, i) => { if (usable(m)) out.push({ t, m, i, key: t.id + ':' + i }); });
     return out;
+  }
+  // what the teacher typed straight onto a form: {ref: text}
+  function editsKey(f, learnerId) {
+    const who = f.m.kind === 'grade' ? 'g' + ui.grade : f.m.kind === 'school' ? 'all' : f.m.kind === 'learner' ? 'l' + (learnerId || ui.learnerId) : ui.classId;
+    return `${f.key}:${who}:${ui.period}`;
+  }
+  function formEdits(f, create, learnerId) {
+    state.edits = state.edits || {};
+    const k = editsKey(f, learnerId);
+    if (!state.edits[k] && create) state.edits[k] = {};
+    return state.edits[k] || {};
   }
   function currentForm() {
     const forms = allForms();
@@ -2227,16 +2363,18 @@ window.SAMPLE_TEMPLATES = {
 
   // ---------- render root ----------
   function render() {
-    $$('.nav-item').forEach(b => b.setAttribute('aria-current', b.dataset.view === ui.view ? 'page' : 'false'));
     $('#brand-sy').textContent = 'School year ' + state.sy;
+    $('#settings-btn').textContent = ui.view === 'fill' ? 'Settings' : '‹ Back to my forms';
+    $('#settings-btn').dataset.act = ui.view === 'fill' ? 'go-settings' : 'go-fill';
     $('#rail-foot').textContent = isDesktop ? 'Your work is saved on this computer automatically.' : 'Test version: your work is kept in this browser. Save a backup in Settings.';
-    $('#banner').innerHTML = '';
     const v = $('#view');
-    if (ui.view === 'fill') v.innerHTML = viewFill();
-    else if (ui.view === 'templates') { v.innerHTML = ui.tplId ? '<div class="empty">Opening form…</div>' : viewTemplates(); if (ui.tplId) renderMapper(); }
-    else if (ui.view === 'classes') v.innerHTML = viewClasses();
-    else if (ui.view === 'settings') v.innerHTML = viewSettings();
-    if (ui.view === 'fill' && ui.preview) refreshPreview();
+    if (ui.view === 'adjust' && ui.tplId) { v.innerHTML = '<div class="empty">Opening…</div>'; renderMapper(); return; }
+    if (ui.view === 'settings') { v.innerHTML = viewSettings() + viewClasses(); return; }
+    ui.view = 'fill';
+    v.innerHTML = viewFill();
+    const f = currentForm();
+    if (f && (f.m.kind === 'none' || (f.m.kind === 'learner' && ui.learnerId))) renderFormView(f);
+    else if (ui.preview || (f && f.m.kind !== 'class')) refreshPreview();
   }
 
   // ================= Fill in forms =================
@@ -2264,41 +2402,56 @@ window.SAMPLE_TEMPLATES = {
         </ol>
         ${uploadBox(true)}`;
     }
-    const forms = allForms();
-    const groups = {};
-    for (const x of forms) (groups[x.t.name] = groups[x.t.name] || []).push(x);
-    const formSelect = Object.entries(groups).map(([n, xs]) => `<optgroup label="${esc(n)}">${xs.map(x => `<option value="${x.key}"${x.key === f.key ? ' selected' : ''}>${esc(x.m.sheetName)}</option>`).join('')}</optgroup>`).join('');
+    const tabs = allForms().filter(x => x.t.id === f.t.id);
+    const fileBar = `
+      <div class="filebar">
+        <label class="field grow"><span>Form file</span><select id="file-pick">${options(state.templates.filter(t => t.sheets.some(usable)).map(t => [t.id, t.name]).concat([['__upload', '+ Upload another form…']]), f.t.id)}</select></label>
+        <input type="file" id="tpl-file" hidden accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+      </div>
+      ${tabs.length > 1 ? `<div class="tabs" role="tablist">${tabs.map(x => `<button type="button" role="tab" class="tab" data-act="tab" data-key="${x.key}" aria-selected="${x.key === f.key}">${esc(x.m.sheetName)}</button>`).join('')}</div>` : ''}`;
     const kind = f.m.kind;
     const lang = formLang(f);
     let who = '';
     if (kind === 'class' || kind === 'learner') {
       const cls = currentClass(true);
       who = `<label class="field"><span>Class</span><select id="fill-class">${options(syClasses().map(c => [c.id, className(c)]).concat([['__new', '+ Add another class']]), cls.id)}</select></label>`;
+      if (kind === 'learner') {
+        const ls = Data.sortLearners(cls.learners);
+        if (!ls.find(l => l.id === ui.learnerId)) ui.learnerId = ls[0] ? ls[0].id : null;
+        who += `<label class="field"><span>Learner</span><select id="fill-learner">${options(ls.map(l => [l.id, Data.fullName(l, state.settings)]).concat([['__new', '+ Add a learner']]), ui.learnerId)}</select></label>
+          <label class="field" id="new-learner-wrap" hidden><span>New learner’s name</span><input type="text" id="new-learner" placeholder="DELA CRUZ, Juan P."></label>`;
+      }
     } else if (kind === 'grade') {
       const grades = [...new Set(syClasses().map(c => String(c.grade)).filter(Boolean))].sort((a, b) => a - b);
       if (!grades.includes(String(ui.grade))) ui.grade = grades[0] || '';
       who = `<label class="field"><span>Grade</span><select id="fill-grade">${options(grades.length ? grades.map(g => [g, 'Grade ' + g]) : [['', 'No classes yet']], ui.grade)}</select></label>`;
     }
+    if (kind === 'none') {
+      const cls = currentClass(true);
+      who = `<label class="field"><span>Class</span><select id="fill-class">${options(syClasses().map(c => [c.id, className(c)]).concat([['__new', '+ Add another class']]), cls.id)}</select></label>`;
+    }
     const top = `
       <div class="panel toolbar">
-        <label class="field grow"><span>Form</span><select id="fill-form">${formSelect}</select></label>
         ${who}
         <div class="field"><span>Period</span>${seg('period', PERIODS, ui.period, { BOSY: 'BOSY', MOSY: 'MOSY', EOSY: 'EOSY' })}</div>
         <div class="field"><span>Language</span>${f.m.language ? `<span class="chip ok big">${f.m.language}</span>` : seg('lang', LANGS, ui.lang)}</div>
       </div>`;
     let body = '';
-    if (kind === 'class') body = fillClass(f, lang);
-    else if (kind === 'learner') body = `<div class="panel stack"><h2>One page per learner</h2><p class="muted">This form is filled once for every learner in the class. Saving gives you a .zip with one Excel file per learner.</p></div>${detailsPanel(f)}`;
+    if (kind === 'learner' && !ui.learnerId) body = `<div class="notice ok"><b>One page per learner.</b> Add a learner above (or fill in a class form first), then type on the form.</div>`;
+    else if (kind === 'none' || kind === 'learner') body = `<div class="notice ok"><b>Type straight on the form.</b> Click any box below and type. Press Enter to go down, Tab to go right. What you type is kept and printed exactly there.</div>
+      <div class="formview-wrap" id="formview"><div class="empty">Opening the form…</div></div>`;
+    else if (kind === 'class') body = fillClass(f, lang);
     else body = `<div class="panel stack"><h2>${kind === 'grade' ? 'Filled in automatically from your sections' : 'Filled in automatically from all classes'}</h2>
       <p class="muted">This summary counts learners from the class forms you have filled in for ${esc(PERIOD_LABEL[ui.period])}, ${esc(lang)}. To include other teachers’ sections, use <b>Settings › Add a colleague’s classes</b>.</p></div>${detailsPanel(f)}`;
-    const preview = kind === 'class' ? ui.preview : true;
+    const preview = kind === 'none' || kind === 'learner' ? false : kind === 'class' ? ui.preview : true;
     return `
-      <div class="head"><div><h1>${esc(f.m.sheetName)}</h1><p class="muted">${esc(f.t.name)} · ${KIND_LABEL[kind]}</p></div></div>
+      ${fileBar}
       ${top}
       ${body}
       <div class="savebar">
         <button class="btn primary" type="button" data-act="save-form">Save as Excel file</button>
         ${isDesktop ? '<button class="btn" type="button" data-act="open-form">Open in Excel to print</button>' : ''}
+        ${kind === 'learner' ? '<button class="btn" type="button" data-act="save-all">Save all learners (.zip)</button>' : ''}
         ${kind === 'class' ? `<button class="btn" type="button" data-act="toggle-preview">${ui.preview ? 'Hide printout' : 'See how it prints'}</button>` : ''}
         <details class="pagesetup"><summary>Page setup</summary>
           <div class="stack" style="margin-top:8px">
@@ -2310,7 +2463,31 @@ window.SAMPLE_TEMPLATES = {
         <span class="muted" id="save-note"></span>
       </div>
       <div id="pr-warn"></div>
-      <div class="preview-wrap" id="preview"${preview ? '' : ' hidden'}><div class="empty">Preparing preview…</div></div>`;
+      <div class="preview-wrap" id="preview"${preview ? '' : ' hidden'}><div class="empty">Preparing preview…</div></div>
+      <p class="muted small adjust-link">Something landing in the wrong place? <button class="btn quiet small" type="button" data-act="open-sheet" data-tpl="${f.t.id}" data-i="${f.i}">Adjust this form</button> · <button class="btn quiet small danger" type="button" data-act="del-tpl" data-tpl="${f.t.id}">Remove this file</button></p>`;
+  }
+
+  // ---------- typing straight on the form ----------
+  async function renderFormView(f) {
+    const box = $('#formview');
+    if (!box) return;
+    const data = await tplData(f.t.id);
+    if (!data) { box.innerHTML = '<div class="notice bad">The form file is missing on this computer. Upload it again.</div>'; return; }
+    const sheet = data.wb.sheets.find(s => s.path === f.m.sheetPath);
+    const auto = {};
+    try {
+      const r = Data.buildWrites(f.m, sheet, state, Object.assign(fillContext(f), { learner: f.m.kind === 'learner' ? findLearner(ui.learnerId) : null }));
+      for (const w of r.pages[0]) auto[w.ref] = w.value == null ? '' : String(w.value);
+    } catch (e) { /* the form still opens without automatic values */ }
+    const edits = formEdits(f, false);
+    const values = Object.assign({}, auto, edits);
+    const marks = {};
+    for (const ref in edits) marks[ref] = 'mk-typed';
+    for (const ref in auto) if (!(ref in edits)) marks[ref] = 'mk-fill';
+    const out = XL.renderPages(sheet, pageSetup(f), { editable: true, values, marks });
+    box.innerHTML = pagesNote(out.count) + out.html;
+    box.dataset.key = f.key;
+    fitZoom(box);
   }
 
   // the "header" values of a form: school, teacher, grade & section, date...
@@ -2541,7 +2718,7 @@ window.SAMPLE_TEMPLATES = {
       date: (state.dates || {})[`${ui.classId}:${ui.period}`] || todayText(),
     };
   }
-  async function buildFiles() {
+  async function buildFiles(all) {
     const f = currentForm();
     if (!f) return null;
     const ctx = fillContext(f);
@@ -2549,39 +2726,51 @@ window.SAMPLE_TEMPLATES = {
     if (!data) throw new Error('The form file is missing on this computer. Upload it again under My forms.');
     const sheet = data.wb.sheets.find(s => s.path === f.m.sheetPath);
     const kind = f.m.kind;
-    const page = { fit: ui.page.fit !== false, orientation: (ui.page.orient ?? ((kind === 'grade' || kind === 'school') ? 'landscape' : '')) || null, paper: ui.page.paper ? +ui.page.paper : null };
+    const page = pageSetup(f);
     const opts = { onlySheet: f.m.sheetPath, pageSheet: f.m.sheetPath, page, type: 'uint8array' };
     const files = [], warnings = [];
     const cls = state.classes.find(c => c.id === ctx.classId);
     const who = kind === 'grade' ? 'Grade ' + ctx.grade : kind === 'school' ? state.sy : className(cls);
     const base = [f.m.sheetName, who, ctx.period].join(' - ');
     if (kind === 'learner') {
-      const learners = Data.sortLearners(cls ? cls.learners : []);
+      const learners = Data.sortLearners(cls ? cls.learners : []).filter(l => all || l.id === ui.learnerId);
       for (const l of learners) {
         const r = Data.buildWrites(f.m, sheet, state, Object.assign({}, ctx, { learner: l }));
-        const out = await XL.fillWorkbook(data.buf.slice(0), { [f.m.sheetPath]: r.pages[0] }, opts);
-        files.push({ name: `${Data.fullName(l, state.settings)} - ${ctx.period}.xlsx`, data: out.data, writes: r.pages[0] });
+        const typed = Object.entries(formEdits(f, false, l.id)).map(([ref, v]) => ({ ref, value: /^-?\d+(\.\d+)?$/.test(v.trim()) ? +v : v }));
+        const writes = r.pages[0].concat(typed).filter(w => { const c = sheet.cells.get(w.ref); return !(c && c.formula); });
+        const out = await XL.fillWorkbook(data.buf.slice(0), { [f.m.sheetPath]: writes }, opts);
+        files.push({ name: `${f.m.sheetName} - ${Data.fullName(l, state.settings)} - ${ctx.period}.xlsx`, data: out.data, writes });
       }
       if (!learners.length) warnings.push('This class has no learners yet.');
     } else {
       const r = Data.buildWrites(f.m, sheet, state, ctx);
-      warnings.push(...r.warnings);
+      if (kind !== 'none') warnings.push(...r.warnings);
+      const typed = Object.entries(formEdits(f, false)).map(([ref, v]) => ({ ref, value: /^-?\d+(\.\d+)?$/.test(v.trim()) ? +v : v }));
       for (let i = 0; i < r.pages.length; i++) {
-        const out = await XL.fillWorkbook(data.buf.slice(0), { [f.m.sheetPath]: r.pages[i] }, opts);
-        files.push({ name: `${base}${r.pages.length > 1 ? ` (page ${i + 1})` : ''}.xlsx`, data: out.data, writes: r.pages[i] });
+        const writes = r.pages[i].concat(typed).filter(w => { const c = sheet.cells.get(w.ref); return !(c && c.formula); });
+        const out = await XL.fillWorkbook(data.buf.slice(0), { [f.m.sheetPath]: writes }, opts);
+        files.push({ name: `${base}${r.pages.length > 1 ? ` (page ${i + 1})` : ''}.xlsx`, data: out.data, writes });
       }
     }
     const missing = kind === 'class' ? Data.missingResults(state, ctx, f.m) : [];
     return { f, ctx, files, warnings, missing };
   }
 
-  // shrink a wide form so the whole width is visible
-  function fitZoom(box) {
-    const paper = box.querySelector('.paper');
-    const w = paper && paper.scrollWidth;
-    const avail = box.clientWidth - 34;
-    if (w && avail > 0 && w > avail) paper.style.zoom = Math.max(0.3, avail / w).toFixed(3);
+  // the page options used both on screen and in the saved file
+  function pageSetup(f) {
+    const kind = f.m.kind;
+    return { fit: ui.page.fit !== false, orientation: (ui.page.orient ?? ((kind === 'grade' || kind === 'school') ? 'landscape' : '')) || null, paper: ui.page.paper ? +ui.page.paper : null };
   }
+  // shrink the pages so a whole page width fits the screen
+  function fitZoom(box) {
+    const pages = box.querySelector('.xl-pages') || box.querySelector('.paper');
+    if (!pages) return;
+    const page = pages.querySelector('.xl-page');
+    const w = page ? page.offsetWidth : pages.scrollWidth;
+    const avail = box.clientWidth - 34;
+    pages.style.zoom = w && avail > 0 && w > avail ? Math.max(0.3, avail / w).toFixed(3) : '';
+  }
+  function pagesNote(n) { return `<p class="pages-note">${n === 1 ? 'Prints on 1 page.' : `Prints on ${n} pages. The gaps show where each page ends.`}</p>`; }
 
   let previewSeq = 0;
   async function refreshPreview() {
@@ -2600,18 +2789,19 @@ window.SAMPLE_TEMPLATES = {
       if (seq !== previewSeq) return;
       const sheet = wb.sheets.find(s => s.path === res.f.m.sheetPath);
       XL.computeFormulas(sheet);
-      box.innerHTML = `<div class="paper">${XL.renderSheet(sheet)}</div>`;
+      const out = XL.renderPages(sheet, pageSetup(res.f));
+      box.innerHTML = pagesNote(out.count) + out.html;
       fitZoom(box);
     } catch (e) {
       if (seq === previewSeq) box.innerHTML = `<div class="notice bad">${esc(e.message || e)}</div>`;
     }
   }
 
-  async function saveForm(openAfter) {
-    const btns = $$('[data-act="save-form"],[data-act="open-form"]');
+  async function saveForm(openAfter, all) {
+    const btns = $$('[data-act="save-form"],[data-act="open-form"],[data-act="save-all"]');
     btns.forEach(b => { b.disabled = true; });
     try {
-      const res = await buildFiles();
+      const res = await buildFiles(all);
       if (!res || !res.files.length) { toast('Nothing to save yet.'); return; }
       let blob, name;
       if (res.files.length === 1) {
@@ -2636,29 +2826,7 @@ window.SAMPLE_TEMPLATES = {
     } finally { btns.forEach(b => { b.disabled = false; }); }
   }
 
-  // ================= My forms (templates) =================
-  function viewTemplates() {
-    const cards = state.templates.map(t => {
-      const sheets = t.sheets.map((m, i) => `<div class="sheet-row">
-          <span><b>${esc(m.sheetName)}</b>${m.hidden ? ' <span class="muted">(hidden sheet)</span>' : ''}</span>
-          <span class="chip">${KIND_LABEL[m.kind]}${m.language ? ' · ' + m.language : ''}</span>
-          ${m.kind !== 'none' ? `<button class="btn small primary" type="button" data-act="fill-sheet" data-tpl="${t.id}" data-i="${i}">Fill in</button>` : '<span></span>'}
-          <button class="btn small quiet" type="button" data-act="open-sheet" data-tpl="${t.id}" data-i="${i}">Adjust</button>
-        </div>`).join('');
-      return `<div class="panel tpl-card">
-        <div class="tpl-top">
-          <div><h2>${esc(t.name)}</h2><p class="muted">${esc(t.fileName)} · uploaded ${new Date(t.addedAt).toLocaleDateString()}</p></div>
-          <button class="btn small quiet danger" type="button" data-act="del-tpl" data-tpl="${t.id}">Remove</button>
-        </div>
-        <div class="sheet-rows">${sheets}</div>
-      </div>`;
-    }).join('');
-    return `
-      <div class="head"><div><h1>My forms</h1><p>Upload each new DepEd form once. The app reads it and makes a table for you to fill in. <b>Adjust</b> is only needed if something lands in the wrong place.</p></div></div>
-      ${uploadBox(!state.templates.length)}
-      ${cards}`;
-  }
-
+  // ================= uploading a form =================
   async function importTemplate(buf, fileName, name) {
     let wb;
     try { wb = await XL.loadWorkbook(buf.slice(0)); }
@@ -2674,16 +2842,17 @@ window.SAMPLE_TEMPLATES = {
     state.templates.unshift({ id, name: name || fileName.replace(/\.xls[xm]?$/i, ''), fileName, addedAt: Date.now(), sheets });
     await Data.kvSet('tpl:' + id, buf);
     tplCache.set(id, { buf, wb });
-    const forms = sheets.filter(s => s.kind !== 'none');
-    if (!forms.length) { save(); toast(`No form table was found in ${fileName}. Open it under My forms › Adjust.`); ui.view = 'templates'; render(); return; }
-    const first = sheets.findIndex(s => s.kind === 'class');
-    ui.form = id + ':' + (first >= 0 ? first : sheets.indexOf(forms[0]));
-    ui.view = 'fill'; ui.tplId = null; ui.preview = false;
+    const forms = sheets.filter(usable);
+    if (!forms.length) { save(); toast(`${fileName} has no sheets to fill in.`); render(); return; }
+    let first = sheets.findIndex(s => s.kind === 'class' && usable(s));
+    if (first < 0) first = sheets.indexOf(forms[0]);
+    ui.form = id + ':' + first;
+    ui.view = 'fill'; ui.tplId = null; ui.preview = true;
     const m = sheets[first >= 0 ? first : 0];
     if (m && m.language) ui.lang = m.language;
     // a period already ticked on the form (e.g. "√ Pre-Test")
     save();
-    toast(`${fileName} is ready. ${forms.length > 1 ? `${forms.length} forms found. ` : ''}Start typing below.`);
+    toast(`${fileName} is ready.${forms.length > 1 ? ` ${forms.length} forms, one tab each.` : ''} Start typing below.`);
     render();
     window.scrollTo(0, 0);
   }
@@ -2770,7 +2939,7 @@ window.SAMPLE_TEMPLATES = {
 
     $('#view').innerHTML = `
       <div class="head">
-        <div><button class="btn quiet small" type="button" data-act="close-tpl">‹ My forms</button><h1>Adjust: ${esc(m.sheetName)}</h1></div>
+        <div><button class="btn quiet small" type="button" data-act="close-tpl">‹ Back</button><h1>Adjust: ${esc(m.sheetName)}</h1></div>
         <div class="row">
           <select id="sheet-pick" aria-label="Sheet">${sheetTabs}</select>
           <select id="kind-pick" aria-label="Form type">${options(Object.entries(KIND_LABEL), m.kind)}</select>
@@ -2813,7 +2982,7 @@ window.SAMPLE_TEMPLATES = {
         <td><button class="btn small quiet danger" type="button" data-act="del-class">Delete</button></td>
       </tr>`).join('');
     return `
-      <div class="head">
+      <div class="head" style="margin-top:12px">
         <div><h1>Classes</h1><p>Each class keeps its learners for the whole school year, so you type names only once for BOSY, MOSY and EOSY and for every form.</p></div>
         <label class="field"><span>School year</span><input type="text" id="sy-input" value="${esc(state.sy)}" style="width:130px"></label>
       </div>
@@ -2864,8 +3033,6 @@ window.SAMPLE_TEMPLATES = {
 
   // ================= events =================
   document.addEventListener('click', async (e) => {
-    const nav = e.target.closest('.nav-item');
-    if (nav) { ui.view = nav.dataset.view; ui.tplId = null; ui.sel = null; render(); save(); window.scrollTo(0, 0); return; }
 
     const segBtn = e.target.closest('.seg button');
     if (segBtn) {
@@ -2904,6 +3071,9 @@ window.SAMPLE_TEMPLATES = {
     if (!b) return;
     const act = b.dataset.act;
 
+    if (act === 'go-settings') { ui.view = 'settings'; render(); window.scrollTo(0, 0); return; }
+    if (act === 'go-fill') { ui.view = 'fill'; ui.tplId = null; ui.sel = null; save(); render(); window.scrollTo(0, 0); return; }
+    if (act === 'tab') { ui.form = b.dataset.key; ui.preview = true; const f = currentForm(); if (f && f.m.language) ui.lang = f.m.language; save(); render(); return; }
     if (act === 'load-sample-tpl') {
       const s = window.SAMPLE_TEMPLATES[b.dataset.k];
       await importTemplate(b64ToBuf(s.data), s.file, s.name);
@@ -2935,14 +3105,15 @@ window.SAMPLE_TEMPLATES = {
       if (ui.preview) $('#preview').scrollIntoView({ block: 'start', behavior: 'smooth' });
     } else if (act === 'save-form') saveForm(false);
     else if (act === 'open-form') saveForm(true);
+    else if (act === 'save-all') saveForm(false, true);
     else if (act === 'fill-sheet') {
       ui.form = b.dataset.tpl + ':' + b.dataset.i; ui.view = 'fill'; ui.tplId = null; ui.sel = null; save(); render(); window.scrollTo(0, 0);
     } else if (act === 'open-sheet') {
-      ui.view = 'templates'; ui.tplId = b.dataset.tpl; ui.sheetIdx = +b.dataset.i; ui.sel = null; render(); window.scrollTo(0, 0);
-    } else if (act === 'close-tpl') { ui.tplId = null; ui.sel = null; render(); }
+      ui.view = 'adjust'; ui.tplId = b.dataset.tpl; ui.sheetIdx = +b.dataset.i; ui.sel = null; render(); window.scrollTo(0, 0);
+    } else if (act === 'close-tpl') { ui.view = 'fill'; ui.tplId = null; ui.sel = null; render(); }
     else if (act === 'del-tpl') {
       if (!armed(b, 'Click again to remove')) return;
-      state.templates = state.templates.filter(t => t.id !== b.dataset.tpl); Data.kvDel('tpl:' + b.dataset.tpl); tplCache.delete(b.dataset.tpl); save(); render();
+      state.templates = state.templates.filter(t => t.id !== b.dataset.tpl); Data.kvDel('tpl:' + b.dataset.tpl); tplCache.delete(b.dataset.tpl); ui.form = null; save(); render(); toast('File removed.');
     } else if (act === 'redetect') {
       const t = state.templates.find(x => x.id === ui.tplId);
       const data = await tplData(t.id);
@@ -3009,13 +3180,22 @@ window.SAMPLE_TEMPLATES = {
       if (ui.preview) refreshPreview();
       return;
     }
-    if (t.id === 'fill-form') { ui.form = t.value; ui.preview = false; const f = currentForm(); if (f && f.m.language) ui.lang = f.m.language; save(); render(); return; }
+    if (t.id === 'file-pick') {
+      if (t.value === '__upload') { const f = currentForm(); t.value = f ? f.t.id : ''; $('#tpl-file').click(); return; }
+      const f = allForms().find(x => x.t.id === t.value && x.m.kind === 'class') || allForms().find(x => x.t.id === t.value);
+      ui.form = f ? f.key : null; ui.preview = true; if (f && f.m.language) ui.lang = f.m.language; save(); render(); return;
+    }
     if (t.id === 'fill-class') {
       if (t.value === '__new') { const c = { id: Data.uid('c'), sy: state.sy, grade: '', section: '', adviser: '', designation: '', learners: [] }; state.classes.push(c); ui.classId = c.id; }
       else ui.classId = t.value;
       save(); render(); return;
     }
     if (t.id === 'fill-grade') { ui.grade = t.value; save(); render(); return; }
+    if (t.id === 'fill-learner') {
+      if (t.value === '__new') { $('#new-learner-wrap').hidden = false; $('#new-learner').focus(); t.value = ui.learnerId || ''; return; }
+      ui.learnerId = t.value; save(); render(); return;
+    }
+    if (t.id === 'new-learner' && t.value.trim()) { const [l] = addLearners([t.value]); ui.learnerId = l.id; save(); render(); return; }
     if (t.dataset.detail) {
       const [label, where, prop] = DETAIL_FIELDS[t.dataset.detail]; // eslint-disable-line no-unused-vars
       const v = t.value.trim();
@@ -3027,16 +3207,19 @@ window.SAMPLE_TEMPLATES = {
       else if (ui.preview) refreshPreview();
       return;
     }
-    if (t.id === 'pg-fit') { ui.page.fit = t.checked; refreshPreview(); return; }
-    if (t.id === 'pg-orient') { ui.page.orient = t.value; refreshPreview(); return; }
-    if (t.id === 'pg-paper') { ui.page.paper = t.value; refreshPreview(); return; }
+    if (t.id === 'pg-fit' || t.id === 'pg-orient' || t.id === 'pg-paper') {
+      if (t.id === 'pg-fit') ui.page.fit = t.checked; else if (t.id === 'pg-orient') ui.page.orient = t.value; else ui.page.paper = t.value;
+      const f = currentForm();
+      if (f && (f.m.kind === 'none' || f.m.kind === 'learner')) renderFormView(f); else refreshPreview();
+      return;
+    }
     if (t.id === 'tpl-file' && t.files[0]) { const file = t.files[0]; await importTemplate(await file.arrayBuffer(), file.name); return; }
     // classes
     if (t.id === 'sy-input') { state.sy = t.value.trim() || state.sy; ui.classId = null; save(); render(); return; }
     if (t.dataset.cf) { const c = state.classes.find(x => x.id === t.closest('tr').dataset.cid); c[t.dataset.cf] = t.value.trim(); save(); return; }
     // adjust
     if (t.id === 'sheet-pick') { ui.sheetIdx = +t.value; ui.sel = null; renderMapper(); return; }
-    const m = ui.view === 'templates' && ui.tplId ? currentMapping() : null;
+    const m = ui.view === 'adjust' && ui.tplId ? currentMapping() : null;
     if (m) {
       if (t.id === 'kind-pick') m.kind = t.value;
       else if (t.id === 'lang-pick') m.language = t.value || null;
@@ -3077,8 +3260,41 @@ window.SAMPLE_TEMPLATES = {
     }
   });
 
+  function saveTyped(div) {
+    const box = $('#formview');
+    const f = currentForm();
+    if (!box || !f || box.dataset.key !== f.key) return;
+    const td = div.closest('td[data-ref]');
+    const ref = td.dataset.ref;
+    const text = div.innerText.replace(/\n+$/, '');
+    const edits = formEdits(f, true);
+    if (text === (div.dataset.orig ?? '')) return;
+    edits[ref] = text;
+    td.classList.add('mk-typed'); td.classList.remove('mk-fill');
+    save();
+  }
+  document.addEventListener('focusin', (e) => {
+    const d = e.target;
+    if (d.isContentEditable && d.closest('#formview')) d.dataset.orig = d.innerText;
+  });
+  document.addEventListener('focusout', (e) => {
+    const d = e.target;
+    if (d.isContentEditable && d.closest('#formview')) saveTyped(d);
+  });
   document.addEventListener('keydown', (e) => {
     const t = e.target;
+    if (t.isContentEditable && t.closest('#formview') && e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      const td = t.closest('td[data-ref]');
+      const p = XL.parseRef(td.dataset.ref);
+      const span = +(td.getAttribute('rowspan') || 1);
+      for (let r = p.r + span; r < p.r + span + 6; r++) {
+        const next = $(`#formview td[data-ref="${XL.makeRef(r, p.c)}"] [contenteditable]`);
+        if (next) { next.focus(); return; }
+      }
+      t.blur();
+      return;
+    }
     if (e.key !== 'Enter' || !t.closest || !t.closest('table.entry')) return;
     if (t.classList.contains('add-name')) {
       e.preventDefault();
@@ -3127,7 +3343,7 @@ window.SAMPLE_TEMPLATES = {
       state = Object.assign(Data.emptyState(), saved);
       state.settings = Object.assign(Data.emptyState().settings, saved.settings);
       Object.assign(ui, saved.ui || {});
-      if (!['fill', 'templates', 'classes', 'settings'].includes(ui.view)) ui.view = 'fill';
+      ui.view = 'fill';
     }
     render();
   }

@@ -267,9 +267,23 @@
     for (const m of merges) { if (m.r2 > maxR) maxR = m.r2; if (m.c2 > maxC) maxC = m.c2; }
 
     const ps = el(doc, 'pageSetup');
+    const pm = el(doc, 'pageMargins');
+    const po = el(doc, 'printOptions');
+    const spr = el(doc, 'pageSetUpPr');
+    const brk = name => els(el(doc, name), 'brk').map(b => +b.getAttribute('id')).filter(n => n > 0);
+    const num = (node, a, d) => node && node.getAttribute(a) != null && node.getAttribute(a) !== '' ? parseFloat(node.getAttribute(a)) : d;
     const page = {
       orientation: ps ? ps.getAttribute('orientation') || 'portrait' : 'portrait',
       paperSize: ps ? +(ps.getAttribute('paperSize') || 9) : 9,
+      scale: num(ps, 'scale', 100),
+      fitToPage: !!spr && (spr.getAttribute('fitToPage') === '1' || spr.getAttribute('fitToPage') === 'true'),
+      fitToWidth: num(ps, 'fitToWidth', 1),
+      fitToHeight: num(ps, 'fitToHeight', 1),
+      margins: { left: num(pm, 'left', 0.7), right: num(pm, 'right', 0.7), top: num(pm, 'top', 0.75), bottom: num(pm, 'bottom', 0.75) },
+      hCenter: !!po && po.getAttribute('horizontalCentered') === '1',
+      vCenter: !!po && po.getAttribute('verticalCentered') === '1',
+      rowBreaks: brk('rowBreaks'),
+      colBreaks: brk('colBreaks'),
     };
 
     // pictures (logos) from the sheet's drawing part
@@ -371,36 +385,48 @@
    * heights, merges, fonts, fills, borders and pictures.
    * opts.marks: {ref: className} to highlight cells (mapping view)
    * opts.values: {ref: text} to show pending values without saving
+   * opts.editable: let the user type into every cell that is not a formula
    */
+  function printArea(sheet) {
+    return sheet.printArea || { r1: 1, c1: 1, r2: Math.max(sheet.maxR, 1), c2: Math.max(sheet.maxC, 1) };
+  }
+
+  /* opts.range: {r1,c1,r2,c2} draws only that part (one printed page) */
   function renderSheet(sheet, opts = {}) {
-    const area = sheet.printArea || { r1: 1, c1: 1, r2: Math.max(sheet.maxR, 1), c2: Math.max(sheet.maxC, 1) };
-    const r1 = 1, c1 = 1;
-    const r2 = Math.min(area.r2, 400), c2 = Math.min(area.c2, 80);
+    const area = opts.range || Object.assign({}, printArea(sheet), { r1: 1, c1: 1 });
+    const r1 = area.r1, c1 = area.c1;
+    const r2 = Math.min(area.r2, r1 + 600), c2 = Math.min(area.c2, c1 + 100);
     const marks = opts.marks || {};
     const colW = [];
-    let html = '<table class="xl-sheet" cellspacing="0" cellpadding="0"><colgroup>';
-    let totalW = 0;
-    for (let c = c1; c <= c2; c++) { const w = colPx(sheet, c); colW[c] = w; totalW += w; html += `<col style="width:${w}px">`; }
-    html += '</colgroup><tbody>';
+    let totalW = 0, colgroup = '';
+    for (let c = c1; c <= c2; c++) { const w = colPx(sheet, c); colW[c] = w; totalW += w; colgroup += `<col style="width:${w}px">`; }
+    let html = `<table class="xl-sheet" cellspacing="0" cellpadding="0" style="width:${totalW}px"><colgroup>${colgroup}</colgroup><tbody>`;
+    // merges clipped to the drawn range; a merge cut by a page break continues as an empty box
+    const starts = new Map();
     const covered = new Set();
     for (const m of sheet.merges) {
-      for (let r = m.r1; r <= m.r2; r++) for (let c = m.c1; c <= m.c2; c++) if (r !== m.r1 || c !== m.c1) covered.add(r + ':' + c);
+      const mr1 = Math.max(m.r1, r1), mc1 = Math.max(m.c1, c1), mr2 = Math.min(m.r2, r2), mc2 = Math.min(m.c2, c2);
+      if (mr1 > mr2 || mc1 > mc2) continue;
+      starts.set(mr1 + ':' + mc1, { m, mr1, mc1, mr2, mc2, cont: mr1 !== m.r1 || mc1 !== m.c1 });
+      for (let r = mr1; r <= mr2; r++) for (let c = mc1; c <= mc2; c++) if (r !== mr1 || c !== mc1) covered.add(r + ':' + c);
     }
-    const rowTop = []; let y = 0;
+    let totalH = 0;
     for (let r = r1; r <= r2; r++) {
       const h = rowPx(sheet, r);
-      rowTop[r] = y; y += h;
+      totalH += h;
       html += `<tr style="height:${h}px"${h === 0 ? ' class="xl-hidden"' : ''}>`;
       for (let c = c1; c <= c2; c++) {
         if (covered.has(r + ':' + c)) continue;
         const ref = makeRef(r, c);
-        const m = sheet.merges.find(mm => mm.r1 === r && mm.c1 === c);
-        const rs = m ? Math.min(m.r2, r2) - r + 1 : 1;
-        const cs = m ? Math.min(m.c2, c2) - c + 1 : 1;
-        const st = styleOf(sheet, r, c);
+        const mm = starts.get(r + ':' + c);
+        const m = mm ? mm.m : null;
+        const rs = mm ? mm.mr2 - r + 1 : 1;
+        const cs = mm ? mm.mc2 - c + 1 : 1;
+        const cont = mm && mm.cont;
+        const st = cont ? styleOf(sheet, m.r1, m.c1) : styleOf(sheet, r, c);
         const css = [];
-        let txt = opts.values && ref in opts.values ? opts.values[ref] : cellText(sheet, r, c);
-        const cell = sheet.cells.get(ref);
+        const cell = cont ? null : sheet.cells.get(ref);
+        const txt = cont ? '' : (opts.values && ref in opts.values ? opts.values[ref] : cellText(sheet, r, c));
         if (st) {
           const f = st.font;
           if (f) {
@@ -414,8 +440,8 @@
           if (st.fill) css.push(`background:${st.fill}`);
           const b = st.border || {};
           // for merged cells, the right/bottom edge comes from the far cells
-          const right = m ? (styleOf(sheet, r, m.c2)?.border?.right) : b.right;
-          const bottom = m ? (styleOf(sheet, m.r2, c)?.border?.bottom) : b.bottom;
+          const right = m ? (styleOf(sheet, m.r1, m.c2)?.border?.right) : b.right;
+          const bottom = m ? (styleOf(sheet, m.r2, m.c1)?.border?.bottom) : b.bottom;
           const sides = { left: b.left, top: b.top, right, bottom };
           for (const k in sides) if (sides[k]) css.push(`border-${k}:${BORDER_CSS[sides[k].style] || '1px solid'} ${sides[k].color}`);
           const h = st.h || (cell && cell.type === 'number' ? 'right' : null);
@@ -427,30 +453,108 @@
           css.push('vertical-align:bottom');
           if (cell && cell.type === 'number') css.push('text-align:right');
         }
+        // like Excel, text runs over into empty cells on its right
+        const hAlign = st && st.h;
+        if (!mm && txt && !(st && st.wrap) && (!hAlign || hAlign === 'left' || hAlign === 'general') && !(cell && cell.type === 'number')) {
+          const nextEmpty = c < c2 && !sheet.cells.get(makeRef(r, c + 1))?.value && !(opts.values && opts.values[makeRef(r, c + 1)]) && !mergeAt(sheet, r, c + 1);
+          if (nextEmpty) css.push('overflow:visible;position:relative;z-index:1');
+        }
         const cls = marks[ref] ? ` class="${marks[ref]}"` : '';
         const tip = opts.titles && opts.titles[ref] ? ` title="${esc(opts.titles[ref])}"` : '';
         const vert = st && st.rotate === 255 ? ' xl-vert' : '';
-        html += `<td data-ref="${ref}"${rs > 1 ? ` rowspan="${rs}"` : ''}${cs > 1 ? ` colspan="${cs}"` : ''}${cls}${tip} style="${css.join(';')}"><div class="xl-c${st && st.wrap ? ' xl-wrap' : ''}${vert}">${esc(txt)}</div></td>`;
+        const editable = opts.editable && !cont && !(cell && cell.formula);
+        html += `<td${cont ? '' : ` data-ref="${ref}"`}${rs > 1 ? ` rowspan="${rs}"` : ''}${cs > 1 ? ` colspan="${cs}"` : ''}${cls}${tip} style="${css.join(';')}"><div class="xl-c${st && st.wrap ? ' xl-wrap' : ''}${vert}"${editable ? ' contenteditable="true" spellcheck="false"' : ''}>${esc(txt)}</div></td>`;
       }
       html += '</tr>';
     }
     html += '</tbody></table>';
+    // pictures, placed from the sheet origin and shifted to this range
+    const colLeft = c => { let x = 0; for (let i = 1; i < c; i++) x += colPx(sheet, i); return x; };
+    const rowTop = r => { let y = 0; for (let i = 1; i < r; i++) y += rowPx(sheet, i); return y; };
+    const ox = colLeft(c1), oy = rowTop(r1);
     let imgs = '';
-    const colLeft = []; let x = 0;
-    for (let c = c1; c <= c2 + 1; c++) { colLeft[c] = x; x += colW[c] || 0; }
     for (const im of sheet.images) {
       if (!im.from) continue;
-      const left = (colLeft[im.from.col + 1] || 0) + im.from.colOff / 9525;
-      const top = (rowTop[im.from.row + 1] || 0) + im.from.rowOff / 9525;
+      const left = colLeft(im.from.col + 1) + im.from.colOff / 9525 - ox;
+      const top = rowTop(im.from.row + 1) + im.from.rowOff / 9525 - oy;
       let w, h;
       if (im.to) {
-        w = (colLeft[im.to.col + 1] || 0) + im.to.colOff / 9525 - left;
-        h = (rowTop[im.to.row + 1] || 0) + im.to.rowOff / 9525 - top;
+        w = colLeft(im.to.col + 1) + im.to.colOff / 9525 - ox - left;
+        h = rowTop(im.to.row + 1) + im.to.rowOff / 9525 - oy - top;
       }
       if ((!w || !h) && im.ext) { w = im.ext.cx / 9525; h = im.ext.cy / 9525; }
+      if (left + w < 0 || top + h < 0 || left > totalW || top > totalH) continue;
       imgs += `<img class="xl-img" alt="" src="${im.src}" style="left:${left}px;top:${top}px;width:${w}px;height:${h}px">`;
     }
-    return `<div class="xl-wrapper" style="width:${totalW}px">${html}${imgs}</div>`;
+    return `<div class="xl-wrapper" style="width:${totalW}px;height:${totalH}px">${html}${imgs}</div>`;
+  }
+
+  // ---------- printed pages ----------
+  // paper sizes in inches (Excel paperSize codes)
+  const PAPER_IN = { 1: [8.5, 11], 5: [8.5, 14], 8: [11.69, 16.54], 9: [8.27, 11.69], 11: [5.83, 8.27], 14: [8.5, 13] };
+
+  /* Work out the pages exactly as the saved file prints them.
+   * override = the Page setup chosen in the app: {fit, orientation, paper}
+   */
+  function paginate(sheet, override = {}) {
+    const pg = Object.assign({}, sheet.page);
+    if (override.fit) { pg.fitToPage = true; pg.fitToWidth = 1; pg.fitToHeight = 0; }
+    if (override.orientation) pg.orientation = override.orientation;
+    if (override.paper) pg.paperSize = override.paper;
+    let [w, h] = PAPER_IN[pg.paperSize] || PAPER_IN[9];
+    if (pg.orientation === 'landscape') [w, h] = [h, w];
+    const DPI = 96;
+    const pageW = w * DPI, pageH = h * DPI;
+    const mg = pg.margins;
+    const printW = pageW - (mg.left + mg.right) * DPI;
+    const printH = pageH - (mg.top + mg.bottom) * DPI;
+    const area = printArea(sheet);
+    const cw = [], rh = [];
+    let totalW = 0, totalH = 0;
+    for (let c = area.c1; c <= area.c2; c++) { cw[c] = colPx(sheet, c); totalW += cw[c]; }
+    for (let r = area.r1; r <= area.r2; r++) { rh[r] = rowPx(sheet, r); totalH += rh[r]; }
+    let scale = (pg.scale || 100) / 100;
+    if (pg.fitToPage) {
+      const sx = pg.fitToWidth > 0 ? (printW * pg.fitToWidth) / totalW : Infinity;
+      const sy = pg.fitToHeight > 0 ? (printH * pg.fitToHeight) / totalH : Infinity;
+      scale = Math.min(1, sx, sy);
+    }
+    scale = Math.max(0.1, Math.min(4, scale));
+    const cut = (from, to, size, limit, manual) => {
+      const out = [];
+      let start = from, used = 0;
+      for (let i = from; i <= to; i++) {
+        const sz = size[i] * scale;
+        if (used + sz > limit + 0.5 && i > start) { out.push([start, i - 1]); start = i; used = 0; }
+        used += sz;
+        if (manual.includes(i) && i < to) { out.push([start, i]); start = i + 1; used = 0; }
+      }
+      if (start <= to) out.push([start, to]);
+      return out;
+    };
+    const rowsets = cut(area.r1, area.r2, rh, printH, pg.rowBreaks || []);
+    const colsets = cut(area.c1, area.c2, cw, printW, pg.colBreaks || []);
+    const pages = [];
+    // Excel prints down, then over
+    for (const [c1, c2] of colsets) for (const [r1, r2] of rowsets) pages.push({ r1, r2, c1, c2 });
+    return { pages, scale, pageW, pageH, printW, printH, margins: mg, hCenter: pg.hCenter, vCenter: pg.vCenter, dpi: DPI };
+  }
+
+  function renderPages(sheet, override, opts = {}) {
+    const lay = paginate(sheet, override);
+    const n = lay.pages.length;
+    const html = lay.pages.map((rg, i) => {
+      let w = 0, h = 0;
+      for (let c = rg.c1; c <= rg.c2; c++) w += colPx(sheet, c);
+      for (let r = rg.r1; r <= rg.r2; r++) h += rowPx(sheet, r);
+      const left = lay.margins.left * lay.dpi + (lay.hCenter ? Math.max(0, (lay.printW - w * lay.scale) / 2) : 0);
+      const top = lay.margins.top * lay.dpi + (lay.vCenter ? Math.max(0, (lay.printH - h * lay.scale) / 2) : 0);
+      return `<div class="xl-page" style="width:${lay.pageW}px;height:${lay.pageH}px">
+        <div class="xl-page-area" style="left:${left}px;top:${top}px;transform:scale(${lay.scale})">${renderSheet(sheet, Object.assign({}, opts, { range: rg }))}</div>
+        <div class="xl-page-no">Page ${i + 1} of ${n}</div>
+      </div>`;
+    }).join('');
+    return { html: `<div class="xl-pages">${html}</div>`, count: n, layout: lay };
   }
 
   // ---------- filling ----------
@@ -686,7 +790,7 @@
   }
 
   global.XL = {
-    computeFormulas,
+    computeFormulas, paginate, renderPages,
     loadWorkbook, renderSheet, fillWorkbook,
     parseRef, makeRef, colToNum, numToCol, parseRange,
     cellText, mergeAt, hasBorder, rowPx, colPx, styleOf,

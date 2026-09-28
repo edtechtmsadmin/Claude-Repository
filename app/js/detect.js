@@ -31,7 +31,7 @@
     'sy': ['school year', 'sy', 's y', 'taong panuruan'],
     'period': ['test period', 'assessment period', 'period', 'type of test', 'testing period'],
     'language': ['language', 'wika'],
-    'class.gradeSection': ['grade and section', 'grade section', 'grade level and section', 'baitang at pangkat'],
+    'class.gradeSection': ['grade and section', 'grade section', 'grade level and section', 'baitang at pangkat', 'baitang pangkat', 'grade section level'],
     'class.grade': ['grade', 'grade level', 'baitang', 'grade lvl'],
     'class.section': ['section', 'pangkat'],
     'class.adviser': ['teacher', 'name of teacher', 'class adviser', 'adviser', 'assessor', 'guro', 'name of assessor', 'tester', 'name of adviser'],
@@ -40,7 +40,7 @@
     'count.male': ['male', 'boys', 'no of male', 'lalaki', 'no of males'],
     'count.female': ['female', 'girls', 'babae', 'no of female', 'no of females'],
     'count.total': ['total', 'total enrolment', 'total enrollment', 'enrolment', 'enrollment'],
-    'learner.name': ['name of learner', 'learner s name', 'learners name', 'name of pupil', 'name of student', 'pangalan ng mag aaral', 'name'],
+    'learner.name': ['name of learner', 'learner s name', 'learners name', 'name of pupil', 'name of student', 'pangalan ng mag aaral', 'name', 'pangalan', 'pupil s name', 'student s name'],
     'learner.lrn': ['lrn', 'learner reference number'],
     'learner.sex': ['sex', 'gender', 'kasarian'],
   };
@@ -126,7 +126,7 @@
         const cell = sheet.cells.get(makeRef(r, c));
         if (!cell || cell.type !== 'string') continue;
         const n = norm(cell.value);
-        if (!COLUMN['learner.name'].includes(n)) continue;
+        if (!COLUMN['learner.name'].includes(n) || /:\s*$/.test(cell.value)) continue; // "Pangalan:" is a label, not a column
         const list = buildList(sheet, r, c);
         if (list) {
           lists.push(list);
@@ -212,6 +212,9 @@
     }
     if (cur) parts.push(cur);
     if (!parts.length) return null;
+    // a learner table has several rows and at least one column besides the name
+    const rowCount = parts.reduce((a, p) => a + p.last - p.first + 1, 0);
+    if (rowCount < 3 || columns.filter(c => c.key && c.key !== 'learner.name' && c.key !== 'row.no').length < 1) return null;
     const lastRow = parts[parts.length - 1].last;
 
     // extra columns: link totals to the scores they add up, and "< 27" checks to the total
@@ -487,6 +490,10 @@
         if (t && (endsColon || t.bordered) && !taken.has(t.ref)) {
           add({ ref: t.ref, key: hit.key, mode: 'value', conf: hit.conf * (t.bordered ? 0.95 : 0.8) });
           taken.add(t.ref);
+        } else if (endsColon && !taken.has(cell.ref)) {
+          // "School:" in a wide cell with no box next to it: write after the colon
+          add({ ref: cell.ref, key: hit.key, mode: 'after', current: '', conf: hit.conf * 0.8 });
+          taken.add(cell.ref);
         }
       }
     }
@@ -547,6 +554,7 @@
     const fields = findFields(sheet, tableRows);
 
     let kind = 'none';
+    const notes = /instruction|direction|guide|read ?me|legend|how to/i.test(sheet.name);
     if (lists.length) kind = 'class';
     else if (summaries.length) kind = summaries[0].groupBy === 'section' ? 'grade' : 'school';
     else if (fields.some(f => f.key === 'learner.name')) kind = 'learner';
@@ -560,7 +568,7 @@
     }
     return {
       sheetPath: sheet.path, sheetName: sheet.name, sheetIndex: sheet.index, hidden: sheet.hidden,
-      kind, language, fields, lists, summaries, checked: false,
+      kind, language, fields, lists, summaries, checked: false, notes,
     };
   }
 

@@ -17,7 +17,7 @@
 
   let state = Data.emptyState();
   const tplCache = new Map();   // template id -> {buf, wb}
-  const ui = { view: 'fill', form: null, classId: null, grade: null, period: 'BOSY', lang: 'Filipino', preview: false, page: {}, tplId: null, sheetIdx: 0, sel: null, zoom: 0.8 };
+  const ui = { view: 'fill', form: null, classId: null, grade: null, period: 'BOSY', lang: 'Filipino', preview: true, page: {}, tplId: null, sheetIdx: 0, sel: null, zoom: 0.8 };
 
   // ---------- persistence ----------
   let saveTimer = null;
@@ -95,10 +95,22 @@
   const b64ToBuf = b64 => { const bin = atob(b64); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u.buffer; };
   const todayText = () => new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
+  const usable = m => !m.notes && !m.hidden;
   function allForms() {
     const out = [];
-    for (const t of state.templates) t.sheets.forEach((m, i) => { if (m.kind !== 'none') out.push({ t, m, i, key: t.id + ':' + i }); });
+    for (const t of state.templates) t.sheets.forEach((m, i) => { if (usable(m)) out.push({ t, m, i, key: t.id + ':' + i }); });
     return out;
+  }
+  // what the teacher typed straight onto a form: {ref: text}
+  function editsKey(f, learnerId) {
+    const who = f.m.kind === 'grade' ? 'g' + ui.grade : f.m.kind === 'school' ? 'all' : f.m.kind === 'learner' ? 'l' + (learnerId || ui.learnerId) : ui.classId;
+    return `${f.key}:${who}:${ui.period}`;
+  }
+  function formEdits(f, create, learnerId) {
+    state.edits = state.edits || {};
+    const k = editsKey(f, learnerId);
+    if (!state.edits[k] && create) state.edits[k] = {};
+    return state.edits[k] || {};
   }
   function currentForm() {
     const forms = allForms();
@@ -121,16 +133,18 @@
 
   // ---------- render root ----------
   function render() {
-    $$('.nav-item').forEach(b => b.setAttribute('aria-current', b.dataset.view === ui.view ? 'page' : 'false'));
     $('#brand-sy').textContent = 'School year ' + state.sy;
+    $('#settings-btn').textContent = ui.view === 'fill' ? 'Settings' : '‹ Back to my forms';
+    $('#settings-btn').dataset.act = ui.view === 'fill' ? 'go-settings' : 'go-fill';
     $('#rail-foot').textContent = isDesktop ? 'Your work is saved on this computer automatically.' : 'Test version: your work is kept in this browser. Save a backup in Settings.';
-    $('#banner').innerHTML = '';
     const v = $('#view');
-    if (ui.view === 'fill') v.innerHTML = viewFill();
-    else if (ui.view === 'templates') { v.innerHTML = ui.tplId ? '<div class="empty">Opening form…</div>' : viewTemplates(); if (ui.tplId) renderMapper(); }
-    else if (ui.view === 'classes') v.innerHTML = viewClasses();
-    else if (ui.view === 'settings') v.innerHTML = viewSettings();
-    if (ui.view === 'fill' && ui.preview) refreshPreview();
+    if (ui.view === 'adjust' && ui.tplId) { v.innerHTML = '<div class="empty">Opening…</div>'; renderMapper(); return; }
+    if (ui.view === 'settings') { v.innerHTML = viewSettings() + viewClasses(); return; }
+    ui.view = 'fill';
+    v.innerHTML = viewFill();
+    const f = currentForm();
+    if (f && (f.m.kind === 'none' || (f.m.kind === 'learner' && ui.learnerId))) renderFormView(f);
+    else if (ui.preview || (f && f.m.kind !== 'class')) refreshPreview();
   }
 
   // ================= Fill in forms =================
@@ -158,41 +172,56 @@
         </ol>
         ${uploadBox(true)}`;
     }
-    const forms = allForms();
-    const groups = {};
-    for (const x of forms) (groups[x.t.name] = groups[x.t.name] || []).push(x);
-    const formSelect = Object.entries(groups).map(([n, xs]) => `<optgroup label="${esc(n)}">${xs.map(x => `<option value="${x.key}"${x.key === f.key ? ' selected' : ''}>${esc(x.m.sheetName)}</option>`).join('')}</optgroup>`).join('');
+    const tabs = allForms().filter(x => x.t.id === f.t.id);
+    const fileBar = `
+      <div class="filebar">
+        <label class="field grow"><span>Form file</span><select id="file-pick">${options(state.templates.filter(t => t.sheets.some(usable)).map(t => [t.id, t.name]).concat([['__upload', '+ Upload another form…']]), f.t.id)}</select></label>
+        <input type="file" id="tpl-file" hidden accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+      </div>
+      ${tabs.length > 1 ? `<div class="tabs" role="tablist">${tabs.map(x => `<button type="button" role="tab" class="tab" data-act="tab" data-key="${x.key}" aria-selected="${x.key === f.key}">${esc(x.m.sheetName)}</button>`).join('')}</div>` : ''}`;
     const kind = f.m.kind;
     const lang = formLang(f);
     let who = '';
     if (kind === 'class' || kind === 'learner') {
       const cls = currentClass(true);
       who = `<label class="field"><span>Class</span><select id="fill-class">${options(syClasses().map(c => [c.id, className(c)]).concat([['__new', '+ Add another class']]), cls.id)}</select></label>`;
+      if (kind === 'learner') {
+        const ls = Data.sortLearners(cls.learners);
+        if (!ls.find(l => l.id === ui.learnerId)) ui.learnerId = ls[0] ? ls[0].id : null;
+        who += `<label class="field"><span>Learner</span><select id="fill-learner">${options(ls.map(l => [l.id, Data.fullName(l, state.settings)]).concat([['__new', '+ Add a learner']]), ui.learnerId)}</select></label>
+          <label class="field" id="new-learner-wrap" hidden><span>New learner’s name</span><input type="text" id="new-learner" placeholder="DELA CRUZ, Juan P."></label>`;
+      }
     } else if (kind === 'grade') {
       const grades = [...new Set(syClasses().map(c => String(c.grade)).filter(Boolean))].sort((a, b) => a - b);
       if (!grades.includes(String(ui.grade))) ui.grade = grades[0] || '';
       who = `<label class="field"><span>Grade</span><select id="fill-grade">${options(grades.length ? grades.map(g => [g, 'Grade ' + g]) : [['', 'No classes yet']], ui.grade)}</select></label>`;
     }
+    if (kind === 'none') {
+      const cls = currentClass(true);
+      who = `<label class="field"><span>Class</span><select id="fill-class">${options(syClasses().map(c => [c.id, className(c)]).concat([['__new', '+ Add another class']]), cls.id)}</select></label>`;
+    }
     const top = `
       <div class="panel toolbar">
-        <label class="field grow"><span>Form</span><select id="fill-form">${formSelect}</select></label>
         ${who}
         <div class="field"><span>Period</span>${seg('period', PERIODS, ui.period, { BOSY: 'BOSY', MOSY: 'MOSY', EOSY: 'EOSY' })}</div>
         <div class="field"><span>Language</span>${f.m.language ? `<span class="chip ok big">${f.m.language}</span>` : seg('lang', LANGS, ui.lang)}</div>
       </div>`;
     let body = '';
-    if (kind === 'class') body = fillClass(f, lang);
-    else if (kind === 'learner') body = `<div class="panel stack"><h2>One page per learner</h2><p class="muted">This form is filled once for every learner in the class. Saving gives you a .zip with one Excel file per learner.</p></div>${detailsPanel(f)}`;
+    if (kind === 'learner' && !ui.learnerId) body = `<div class="notice ok"><b>One page per learner.</b> Add a learner above (or fill in a class form first), then type on the form.</div>`;
+    else if (kind === 'none' || kind === 'learner') body = `<div class="notice ok"><b>Type straight on the form.</b> Click any box below and type. Press Enter to go down, Tab to go right. What you type is kept and printed exactly there.</div>
+      <div class="formview-wrap" id="formview"><div class="empty">Opening the form…</div></div>`;
+    else if (kind === 'class') body = fillClass(f, lang);
     else body = `<div class="panel stack"><h2>${kind === 'grade' ? 'Filled in automatically from your sections' : 'Filled in automatically from all classes'}</h2>
       <p class="muted">This summary counts learners from the class forms you have filled in for ${esc(PERIOD_LABEL[ui.period])}, ${esc(lang)}. To include other teachers’ sections, use <b>Settings › Add a colleague’s classes</b>.</p></div>${detailsPanel(f)}`;
-    const preview = kind === 'class' ? ui.preview : true;
+    const preview = kind === 'none' || kind === 'learner' ? false : kind === 'class' ? ui.preview : true;
     return `
-      <div class="head"><div><h1>${esc(f.m.sheetName)}</h1><p class="muted">${esc(f.t.name)} · ${KIND_LABEL[kind]}</p></div></div>
+      ${fileBar}
       ${top}
       ${body}
       <div class="savebar">
         <button class="btn primary" type="button" data-act="save-form">Save as Excel file</button>
         ${isDesktop ? '<button class="btn" type="button" data-act="open-form">Open in Excel to print</button>' : ''}
+        ${kind === 'learner' ? '<button class="btn" type="button" data-act="save-all">Save all learners (.zip)</button>' : ''}
         ${kind === 'class' ? `<button class="btn" type="button" data-act="toggle-preview">${ui.preview ? 'Hide printout' : 'See how it prints'}</button>` : ''}
         <details class="pagesetup"><summary>Page setup</summary>
           <div class="stack" style="margin-top:8px">
@@ -204,7 +233,31 @@
         <span class="muted" id="save-note"></span>
       </div>
       <div id="pr-warn"></div>
-      <div class="preview-wrap" id="preview"${preview ? '' : ' hidden'}><div class="empty">Preparing preview…</div></div>`;
+      <div class="preview-wrap" id="preview"${preview ? '' : ' hidden'}><div class="empty">Preparing preview…</div></div>
+      <p class="muted small adjust-link">Something landing in the wrong place? <button class="btn quiet small" type="button" data-act="open-sheet" data-tpl="${f.t.id}" data-i="${f.i}">Adjust this form</button> · <button class="btn quiet small danger" type="button" data-act="del-tpl" data-tpl="${f.t.id}">Remove this file</button></p>`;
+  }
+
+  // ---------- typing straight on the form ----------
+  async function renderFormView(f) {
+    const box = $('#formview');
+    if (!box) return;
+    const data = await tplData(f.t.id);
+    if (!data) { box.innerHTML = '<div class="notice bad">The form file is missing on this computer. Upload it again.</div>'; return; }
+    const sheet = data.wb.sheets.find(s => s.path === f.m.sheetPath);
+    const auto = {};
+    try {
+      const r = Data.buildWrites(f.m, sheet, state, Object.assign(fillContext(f), { learner: f.m.kind === 'learner' ? findLearner(ui.learnerId) : null }));
+      for (const w of r.pages[0]) auto[w.ref] = w.value == null ? '' : String(w.value);
+    } catch (e) { /* the form still opens without automatic values */ }
+    const edits = formEdits(f, false);
+    const values = Object.assign({}, auto, edits);
+    const marks = {};
+    for (const ref in edits) marks[ref] = 'mk-typed';
+    for (const ref in auto) if (!(ref in edits)) marks[ref] = 'mk-fill';
+    const out = XL.renderPages(sheet, pageSetup(f), { editable: true, values, marks });
+    box.innerHTML = pagesNote(out.count) + out.html;
+    box.dataset.key = f.key;
+    fitZoom(box);
   }
 
   // the "header" values of a form: school, teacher, grade & section, date...
@@ -435,7 +488,7 @@
       date: (state.dates || {})[`${ui.classId}:${ui.period}`] || todayText(),
     };
   }
-  async function buildFiles() {
+  async function buildFiles(all) {
     const f = currentForm();
     if (!f) return null;
     const ctx = fillContext(f);
@@ -443,39 +496,51 @@
     if (!data) throw new Error('The form file is missing on this computer. Upload it again under My forms.');
     const sheet = data.wb.sheets.find(s => s.path === f.m.sheetPath);
     const kind = f.m.kind;
-    const page = { fit: ui.page.fit !== false, orientation: (ui.page.orient ?? ((kind === 'grade' || kind === 'school') ? 'landscape' : '')) || null, paper: ui.page.paper ? +ui.page.paper : null };
+    const page = pageSetup(f);
     const opts = { onlySheet: f.m.sheetPath, pageSheet: f.m.sheetPath, page, type: 'uint8array' };
     const files = [], warnings = [];
     const cls = state.classes.find(c => c.id === ctx.classId);
     const who = kind === 'grade' ? 'Grade ' + ctx.grade : kind === 'school' ? state.sy : className(cls);
     const base = [f.m.sheetName, who, ctx.period].join(' - ');
     if (kind === 'learner') {
-      const learners = Data.sortLearners(cls ? cls.learners : []);
+      const learners = Data.sortLearners(cls ? cls.learners : []).filter(l => all || l.id === ui.learnerId);
       for (const l of learners) {
         const r = Data.buildWrites(f.m, sheet, state, Object.assign({}, ctx, { learner: l }));
-        const out = await XL.fillWorkbook(data.buf.slice(0), { [f.m.sheetPath]: r.pages[0] }, opts);
-        files.push({ name: `${Data.fullName(l, state.settings)} - ${ctx.period}.xlsx`, data: out.data, writes: r.pages[0] });
+        const typed = Object.entries(formEdits(f, false, l.id)).map(([ref, v]) => ({ ref, value: /^-?\d+(\.\d+)?$/.test(v.trim()) ? +v : v }));
+        const writes = r.pages[0].concat(typed).filter(w => { const c = sheet.cells.get(w.ref); return !(c && c.formula); });
+        const out = await XL.fillWorkbook(data.buf.slice(0), { [f.m.sheetPath]: writes }, opts);
+        files.push({ name: `${f.m.sheetName} - ${Data.fullName(l, state.settings)} - ${ctx.period}.xlsx`, data: out.data, writes });
       }
       if (!learners.length) warnings.push('This class has no learners yet.');
     } else {
       const r = Data.buildWrites(f.m, sheet, state, ctx);
-      warnings.push(...r.warnings);
+      if (kind !== 'none') warnings.push(...r.warnings);
+      const typed = Object.entries(formEdits(f, false)).map(([ref, v]) => ({ ref, value: /^-?\d+(\.\d+)?$/.test(v.trim()) ? +v : v }));
       for (let i = 0; i < r.pages.length; i++) {
-        const out = await XL.fillWorkbook(data.buf.slice(0), { [f.m.sheetPath]: r.pages[i] }, opts);
-        files.push({ name: `${base}${r.pages.length > 1 ? ` (page ${i + 1})` : ''}.xlsx`, data: out.data, writes: r.pages[i] });
+        const writes = r.pages[i].concat(typed).filter(w => { const c = sheet.cells.get(w.ref); return !(c && c.formula); });
+        const out = await XL.fillWorkbook(data.buf.slice(0), { [f.m.sheetPath]: writes }, opts);
+        files.push({ name: `${base}${r.pages.length > 1 ? ` (page ${i + 1})` : ''}.xlsx`, data: out.data, writes });
       }
     }
     const missing = kind === 'class' ? Data.missingResults(state, ctx, f.m) : [];
     return { f, ctx, files, warnings, missing };
   }
 
-  // shrink a wide form so the whole width is visible
-  function fitZoom(box) {
-    const paper = box.querySelector('.paper');
-    const w = paper && paper.scrollWidth;
-    const avail = box.clientWidth - 34;
-    if (w && avail > 0 && w > avail) paper.style.zoom = Math.max(0.3, avail / w).toFixed(3);
+  // the page options used both on screen and in the saved file
+  function pageSetup(f) {
+    const kind = f.m.kind;
+    return { fit: ui.page.fit !== false, orientation: (ui.page.orient ?? ((kind === 'grade' || kind === 'school') ? 'landscape' : '')) || null, paper: ui.page.paper ? +ui.page.paper : null };
   }
+  // shrink the pages so a whole page width fits the screen
+  function fitZoom(box) {
+    const pages = box.querySelector('.xl-pages') || box.querySelector('.paper');
+    if (!pages) return;
+    const page = pages.querySelector('.xl-page');
+    const w = page ? page.offsetWidth : pages.scrollWidth;
+    const avail = box.clientWidth - 34;
+    pages.style.zoom = w && avail > 0 && w > avail ? Math.max(0.3, avail / w).toFixed(3) : '';
+  }
+  function pagesNote(n) { return `<p class="pages-note">${n === 1 ? 'Prints on 1 page.' : `Prints on ${n} pages. The gaps show where each page ends.`}</p>`; }
 
   let previewSeq = 0;
   async function refreshPreview() {
@@ -494,18 +559,19 @@
       if (seq !== previewSeq) return;
       const sheet = wb.sheets.find(s => s.path === res.f.m.sheetPath);
       XL.computeFormulas(sheet);
-      box.innerHTML = `<div class="paper">${XL.renderSheet(sheet)}</div>`;
+      const out = XL.renderPages(sheet, pageSetup(res.f));
+      box.innerHTML = pagesNote(out.count) + out.html;
       fitZoom(box);
     } catch (e) {
       if (seq === previewSeq) box.innerHTML = `<div class="notice bad">${esc(e.message || e)}</div>`;
     }
   }
 
-  async function saveForm(openAfter) {
-    const btns = $$('[data-act="save-form"],[data-act="open-form"]');
+  async function saveForm(openAfter, all) {
+    const btns = $$('[data-act="save-form"],[data-act="open-form"],[data-act="save-all"]');
     btns.forEach(b => { b.disabled = true; });
     try {
-      const res = await buildFiles();
+      const res = await buildFiles(all);
       if (!res || !res.files.length) { toast('Nothing to save yet.'); return; }
       let blob, name;
       if (res.files.length === 1) {
@@ -530,29 +596,7 @@
     } finally { btns.forEach(b => { b.disabled = false; }); }
   }
 
-  // ================= My forms (templates) =================
-  function viewTemplates() {
-    const cards = state.templates.map(t => {
-      const sheets = t.sheets.map((m, i) => `<div class="sheet-row">
-          <span><b>${esc(m.sheetName)}</b>${m.hidden ? ' <span class="muted">(hidden sheet)</span>' : ''}</span>
-          <span class="chip">${KIND_LABEL[m.kind]}${m.language ? ' · ' + m.language : ''}</span>
-          ${m.kind !== 'none' ? `<button class="btn small primary" type="button" data-act="fill-sheet" data-tpl="${t.id}" data-i="${i}">Fill in</button>` : '<span></span>'}
-          <button class="btn small quiet" type="button" data-act="open-sheet" data-tpl="${t.id}" data-i="${i}">Adjust</button>
-        </div>`).join('');
-      return `<div class="panel tpl-card">
-        <div class="tpl-top">
-          <div><h2>${esc(t.name)}</h2><p class="muted">${esc(t.fileName)} · uploaded ${new Date(t.addedAt).toLocaleDateString()}</p></div>
-          <button class="btn small quiet danger" type="button" data-act="del-tpl" data-tpl="${t.id}">Remove</button>
-        </div>
-        <div class="sheet-rows">${sheets}</div>
-      </div>`;
-    }).join('');
-    return `
-      <div class="head"><div><h1>My forms</h1><p>Upload each new DepEd form once. The app reads it and makes a table for you to fill in. <b>Adjust</b> is only needed if something lands in the wrong place.</p></div></div>
-      ${uploadBox(!state.templates.length)}
-      ${cards}`;
-  }
-
+  // ================= uploading a form =================
   async function importTemplate(buf, fileName, name) {
     let wb;
     try { wb = await XL.loadWorkbook(buf.slice(0)); }
@@ -568,16 +612,17 @@
     state.templates.unshift({ id, name: name || fileName.replace(/\.xls[xm]?$/i, ''), fileName, addedAt: Date.now(), sheets });
     await Data.kvSet('tpl:' + id, buf);
     tplCache.set(id, { buf, wb });
-    const forms = sheets.filter(s => s.kind !== 'none');
-    if (!forms.length) { save(); toast(`No form table was found in ${fileName}. Open it under My forms › Adjust.`); ui.view = 'templates'; render(); return; }
-    const first = sheets.findIndex(s => s.kind === 'class');
-    ui.form = id + ':' + (first >= 0 ? first : sheets.indexOf(forms[0]));
-    ui.view = 'fill'; ui.tplId = null; ui.preview = false;
+    const forms = sheets.filter(usable);
+    if (!forms.length) { save(); toast(`${fileName} has no sheets to fill in.`); render(); return; }
+    let first = sheets.findIndex(s => s.kind === 'class' && usable(s));
+    if (first < 0) first = sheets.indexOf(forms[0]);
+    ui.form = id + ':' + first;
+    ui.view = 'fill'; ui.tplId = null; ui.preview = true;
     const m = sheets[first >= 0 ? first : 0];
     if (m && m.language) ui.lang = m.language;
     // a period already ticked on the form (e.g. "√ Pre-Test")
     save();
-    toast(`${fileName} is ready. ${forms.length > 1 ? `${forms.length} forms found. ` : ''}Start typing below.`);
+    toast(`${fileName} is ready.${forms.length > 1 ? ` ${forms.length} forms, one tab each.` : ''} Start typing below.`);
     render();
     window.scrollTo(0, 0);
   }
@@ -664,7 +709,7 @@
 
     $('#view').innerHTML = `
       <div class="head">
-        <div><button class="btn quiet small" type="button" data-act="close-tpl">‹ My forms</button><h1>Adjust: ${esc(m.sheetName)}</h1></div>
+        <div><button class="btn quiet small" type="button" data-act="close-tpl">‹ Back</button><h1>Adjust: ${esc(m.sheetName)}</h1></div>
         <div class="row">
           <select id="sheet-pick" aria-label="Sheet">${sheetTabs}</select>
           <select id="kind-pick" aria-label="Form type">${options(Object.entries(KIND_LABEL), m.kind)}</select>
@@ -707,7 +752,7 @@
         <td><button class="btn small quiet danger" type="button" data-act="del-class">Delete</button></td>
       </tr>`).join('');
     return `
-      <div class="head">
+      <div class="head" style="margin-top:12px">
         <div><h1>Classes</h1><p>Each class keeps its learners for the whole school year, so you type names only once for BOSY, MOSY and EOSY and for every form.</p></div>
         <label class="field"><span>School year</span><input type="text" id="sy-input" value="${esc(state.sy)}" style="width:130px"></label>
       </div>
@@ -758,8 +803,6 @@
 
   // ================= events =================
   document.addEventListener('click', async (e) => {
-    const nav = e.target.closest('.nav-item');
-    if (nav) { ui.view = nav.dataset.view; ui.tplId = null; ui.sel = null; render(); save(); window.scrollTo(0, 0); return; }
 
     const segBtn = e.target.closest('.seg button');
     if (segBtn) {
@@ -798,6 +841,9 @@
     if (!b) return;
     const act = b.dataset.act;
 
+    if (act === 'go-settings') { ui.view = 'settings'; render(); window.scrollTo(0, 0); return; }
+    if (act === 'go-fill') { ui.view = 'fill'; ui.tplId = null; ui.sel = null; save(); render(); window.scrollTo(0, 0); return; }
+    if (act === 'tab') { ui.form = b.dataset.key; ui.preview = true; const f = currentForm(); if (f && f.m.language) ui.lang = f.m.language; save(); render(); return; }
     if (act === 'load-sample-tpl') {
       const s = window.SAMPLE_TEMPLATES[b.dataset.k];
       await importTemplate(b64ToBuf(s.data), s.file, s.name);
@@ -829,14 +875,15 @@
       if (ui.preview) $('#preview').scrollIntoView({ block: 'start', behavior: 'smooth' });
     } else if (act === 'save-form') saveForm(false);
     else if (act === 'open-form') saveForm(true);
+    else if (act === 'save-all') saveForm(false, true);
     else if (act === 'fill-sheet') {
       ui.form = b.dataset.tpl + ':' + b.dataset.i; ui.view = 'fill'; ui.tplId = null; ui.sel = null; save(); render(); window.scrollTo(0, 0);
     } else if (act === 'open-sheet') {
-      ui.view = 'templates'; ui.tplId = b.dataset.tpl; ui.sheetIdx = +b.dataset.i; ui.sel = null; render(); window.scrollTo(0, 0);
-    } else if (act === 'close-tpl') { ui.tplId = null; ui.sel = null; render(); }
+      ui.view = 'adjust'; ui.tplId = b.dataset.tpl; ui.sheetIdx = +b.dataset.i; ui.sel = null; render(); window.scrollTo(0, 0);
+    } else if (act === 'close-tpl') { ui.view = 'fill'; ui.tplId = null; ui.sel = null; render(); }
     else if (act === 'del-tpl') {
       if (!armed(b, 'Click again to remove')) return;
-      state.templates = state.templates.filter(t => t.id !== b.dataset.tpl); Data.kvDel('tpl:' + b.dataset.tpl); tplCache.delete(b.dataset.tpl); save(); render();
+      state.templates = state.templates.filter(t => t.id !== b.dataset.tpl); Data.kvDel('tpl:' + b.dataset.tpl); tplCache.delete(b.dataset.tpl); ui.form = null; save(); render(); toast('File removed.');
     } else if (act === 'redetect') {
       const t = state.templates.find(x => x.id === ui.tplId);
       const data = await tplData(t.id);
@@ -903,13 +950,22 @@
       if (ui.preview) refreshPreview();
       return;
     }
-    if (t.id === 'fill-form') { ui.form = t.value; ui.preview = false; const f = currentForm(); if (f && f.m.language) ui.lang = f.m.language; save(); render(); return; }
+    if (t.id === 'file-pick') {
+      if (t.value === '__upload') { const f = currentForm(); t.value = f ? f.t.id : ''; $('#tpl-file').click(); return; }
+      const f = allForms().find(x => x.t.id === t.value && x.m.kind === 'class') || allForms().find(x => x.t.id === t.value);
+      ui.form = f ? f.key : null; ui.preview = true; if (f && f.m.language) ui.lang = f.m.language; save(); render(); return;
+    }
     if (t.id === 'fill-class') {
       if (t.value === '__new') { const c = { id: Data.uid('c'), sy: state.sy, grade: '', section: '', adviser: '', designation: '', learners: [] }; state.classes.push(c); ui.classId = c.id; }
       else ui.classId = t.value;
       save(); render(); return;
     }
     if (t.id === 'fill-grade') { ui.grade = t.value; save(); render(); return; }
+    if (t.id === 'fill-learner') {
+      if (t.value === '__new') { $('#new-learner-wrap').hidden = false; $('#new-learner').focus(); t.value = ui.learnerId || ''; return; }
+      ui.learnerId = t.value; save(); render(); return;
+    }
+    if (t.id === 'new-learner' && t.value.trim()) { const [l] = addLearners([t.value]); ui.learnerId = l.id; save(); render(); return; }
     if (t.dataset.detail) {
       const [label, where, prop] = DETAIL_FIELDS[t.dataset.detail]; // eslint-disable-line no-unused-vars
       const v = t.value.trim();
@@ -921,16 +977,19 @@
       else if (ui.preview) refreshPreview();
       return;
     }
-    if (t.id === 'pg-fit') { ui.page.fit = t.checked; refreshPreview(); return; }
-    if (t.id === 'pg-orient') { ui.page.orient = t.value; refreshPreview(); return; }
-    if (t.id === 'pg-paper') { ui.page.paper = t.value; refreshPreview(); return; }
+    if (t.id === 'pg-fit' || t.id === 'pg-orient' || t.id === 'pg-paper') {
+      if (t.id === 'pg-fit') ui.page.fit = t.checked; else if (t.id === 'pg-orient') ui.page.orient = t.value; else ui.page.paper = t.value;
+      const f = currentForm();
+      if (f && (f.m.kind === 'none' || f.m.kind === 'learner')) renderFormView(f); else refreshPreview();
+      return;
+    }
     if (t.id === 'tpl-file' && t.files[0]) { const file = t.files[0]; await importTemplate(await file.arrayBuffer(), file.name); return; }
     // classes
     if (t.id === 'sy-input') { state.sy = t.value.trim() || state.sy; ui.classId = null; save(); render(); return; }
     if (t.dataset.cf) { const c = state.classes.find(x => x.id === t.closest('tr').dataset.cid); c[t.dataset.cf] = t.value.trim(); save(); return; }
     // adjust
     if (t.id === 'sheet-pick') { ui.sheetIdx = +t.value; ui.sel = null; renderMapper(); return; }
-    const m = ui.view === 'templates' && ui.tplId ? currentMapping() : null;
+    const m = ui.view === 'adjust' && ui.tplId ? currentMapping() : null;
     if (m) {
       if (t.id === 'kind-pick') m.kind = t.value;
       else if (t.id === 'lang-pick') m.language = t.value || null;
@@ -971,8 +1030,41 @@
     }
   });
 
+  function saveTyped(div) {
+    const box = $('#formview');
+    const f = currentForm();
+    if (!box || !f || box.dataset.key !== f.key) return;
+    const td = div.closest('td[data-ref]');
+    const ref = td.dataset.ref;
+    const text = div.innerText.replace(/\n+$/, '');
+    const edits = formEdits(f, true);
+    if (text === (div.dataset.orig ?? '')) return;
+    edits[ref] = text;
+    td.classList.add('mk-typed'); td.classList.remove('mk-fill');
+    save();
+  }
+  document.addEventListener('focusin', (e) => {
+    const d = e.target;
+    if (d.isContentEditable && d.closest('#formview')) d.dataset.orig = d.innerText;
+  });
+  document.addEventListener('focusout', (e) => {
+    const d = e.target;
+    if (d.isContentEditable && d.closest('#formview')) saveTyped(d);
+  });
   document.addEventListener('keydown', (e) => {
     const t = e.target;
+    if (t.isContentEditable && t.closest('#formview') && e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      const td = t.closest('td[data-ref]');
+      const p = XL.parseRef(td.dataset.ref);
+      const span = +(td.getAttribute('rowspan') || 1);
+      for (let r = p.r + span; r < p.r + span + 6; r++) {
+        const next = $(`#formview td[data-ref="${XL.makeRef(r, p.c)}"] [contenteditable]`);
+        if (next) { next.focus(); return; }
+      }
+      t.blur();
+      return;
+    }
     if (e.key !== 'Enter' || !t.closest || !t.closest('table.entry')) return;
     if (t.classList.contains('add-name')) {
       e.preventDefault();
@@ -1021,7 +1113,7 @@
       state = Object.assign(Data.emptyState(), saved);
       state.settings = Object.assign(Data.emptyState().settings, saved.settings);
       Object.assign(ui, saved.ui || {});
-      if (!['fill', 'templates', 'classes', 'settings'].includes(ui.view)) ui.view = 'fill';
+      ui.view = 'fill';
     }
     render();
   }

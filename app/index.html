@@ -10,7 +10,7 @@
 </head>
 <body>
 <div class="app">
-  <nav class="rail" aria-label="Main">
+  <header class="topbar">
     <div class="brand">
       <span class="brand-mark" aria-hidden="true">IRI</span>
       <div>
@@ -18,15 +18,13 @@
         <div class="brand-sy" id="brand-sy"></div>
       </div>
     </div>
-    <button class="nav-item" data-view="fill" type="button">Fill in forms</button>
-    <button class="nav-item" data-view="templates" type="button">My forms</button>
-    <button class="nav-item" data-view="classes" type="button">Classes</button>
-    <button class="nav-item" data-view="settings" type="button">Settings</button>
-    <div class="rail-foot" id="rail-foot"></div>
-  </nav>
+    <div class="topbar-actions">
+      <button class="btn quiet" type="button" data-act="go-settings" id="settings-btn">Settings</button>
+    </div>
+  </header>
   <main class="main">
-    <div id="banner"></div>
     <div id="view"></div>
+    <p class="foot muted small" id="rail-foot"></p>
   </main>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
