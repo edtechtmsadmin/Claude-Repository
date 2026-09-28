@@ -256,6 +256,7 @@
           <label class="field"><span>Printing</span><select id="pg-fit">${options(FIT_OPTIONS, fitVal)}</select></label>
           <label class="field"><span>Orientation</span><select id="pg-orient">${options([['', 'As in the form'], ['portrait', 'Portrait'], ['landscape', 'Landscape']], ui.page.orient || '')}</select></label>
           <label class="field"><span>Paper</span><select id="pg-paper">${options(PAPER, ui.page.paper || '')}</select></label>
+          <span class="btn file-btn">Bring in results from the phone…<input type="file" class="phone-results" accept=".json,application/json"></span>
           <button class="btn" type="button" data-act="open-sheet" data-tpl="${f.t.id}" data-i="${f.i}">Adjust how this form is read</button>
           <button class="btn danger" type="button" data-act="del-tpl" data-tpl="${f.t.id}">Remove this file</button>
         </div>
@@ -994,9 +995,10 @@
         <details class="fb-more">
           <summary class="btn">Phone app<span class="caret" aria-hidden="true"></span></summary>
           <div class="fb-menu stack">
-            <button class="btn" type="button" data-act="export-passages">Save passages file for the phone</button>
-            <span class="btn file-btn">Bring in a passages file…<input type="file" id="passages-file" accept=".json,application/json"></span>
-            <p class="muted small">The file holds every passage in both languages, its words and its questions. Copy it to the phone app. A passages file from a colleague can be brought in here too.</p>
+            <button class="btn" type="button" data-act="export-passages">Save file for the phone</button>
+            <span class="btn file-btn">Bring in results from the phone…<input type="file" class="phone-results" accept=".json,application/json"></span>
+            <span class="btn file-btn">Bring in a colleague’s passages…<input type="file" id="passages-file" accept=".json,application/json"></span>
+            <p class="muted small">The file for the phone holds every passage in both languages with its words and questions, your class lists and the scoring rules. Open it in the Phil-IRI Reader app. The phone sends back a results file; bring it in here.</p>
           </div>
         </details>
         <span class="btn file-btn">Bring in from PDF or Word…<input type="file" class="passage-doc" accept="${DOC_ACCEPT}"></span>
@@ -1172,8 +1174,9 @@
     const list = passageList().filter(p => p.text.trim());
     if (!list.length) { toast('Add a passage with its text first.'); return; }
     const pack = Data.passagePack(state, list.slice().sort((a, b) => a.language.localeCompare(b.language) || byGradeSet(a, b)));
-    const r = await saveBlob(`phil-iri-passages-${state.sy}.json`, new Blob([JSON.stringify(pack, null, 1)], { type: 'application/json' }));
-    if (r.status === 'saved') toast(`Saved ${list.length} passage${list.length === 1 ? '' : 's'} for the phone app.`);
+    const r = await saveBlob(`phil-iri-phone-${state.sy}.json`, new Blob([JSON.stringify(pack, null, 1)], { type: 'application/json' }));
+    const nl = pack.classes.reduce((a, c) => a + c.learners.length, 0);
+    if (r.status === 'saved') toast(`Saved ${list.length} passage${list.length === 1 ? '' : 's'} and ${nl} learner${nl === 1 ? '' : 's'} for the phone app.`);
   }
   function currentPassage() { return passageList().find(x => x.id === ui.passageId) || null; }
   // typing: store as the teacher types, without redrawing (keeps the cursor in place)
@@ -1420,6 +1423,14 @@
 
   document.addEventListener('change', async (e) => {
     const t = e.target;
+    if (t.classList && t.classList.contains('phone-results') && t.files[0]) {
+      try {
+        const r = Data.importPhoneResults(state, JSON.parse(await t.files[0].text()));
+        save(); render();
+        toast(`Brought in ${r.done} result${r.done === 1 ? '' : 's'} from the phone${r.missing ? `. ${r.missing} could not be matched to a learner here` : ''}.`);
+      } catch (err) { toast(err.message || 'That file could not be read.'); }
+      t.value = ''; return;
+    }
     if (ui.view === 'passages') {
       if (t.dataset.pf || t.dataset.qf) {
         passageInput(t);

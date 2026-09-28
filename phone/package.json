@@ -1,0 +1,22 @@
+{
+  "name": "phil-iri-reader",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Phil-IRI Reader: Android app that listens to oral reading, marks miscues and sends results to the Phil-IRI Recorder desktop app.",
+  "scripts": {
+    "test": "node tests/align.test.mjs",
+    "android:add": "cap add android",
+    "sync": "cap sync android",
+    "apk": "cap sync android && cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor-community/speech-recognition": "^7.0.1",
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/filesystem": "^8.1.3",
+    "@capacitor/share": "^8.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.2"
+  }
+}

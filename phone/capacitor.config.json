@@ -1,0 +1,9 @@
+{
+  "appId": "ph.deped.philiri.reader",
+  "appName": "Phil-IRI Reader",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": true
+  }
+}

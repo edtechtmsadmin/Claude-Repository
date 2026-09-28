@@ -465,11 +465,17 @@
     return { id: uid('p'), language: language || 'English', grade: '', set: 'A', type: 'oral', title: '', text: '', questions: [], updated: Date.now() };
   }
   function newQuestion() { return { id: uid('q'), type: 'Literal', text: '', choices: ['', '', '', ''], answer: null, expected: '' }; }
-  // the file the phone app reads: everything it needs to show, listen and check
+  // the file the phone app reads: passages to show, listen to and check, the
+  // class lists (so results come back to the right learner) and the scoring rules
   function passagePack(state, list) {
     return {
-      app: 'phil-iri-recorder', kind: 'passages', version: 1, exportedAt: new Date().toISOString(),
+      app: 'phil-iri-recorder', kind: 'phone', version: 1, exportedAt: new Date().toISOString(),
       school: { name: state.school.name, id: state.school.id }, sy: state.sy,
+      rules: state.settings.rules, combine: state.settings.combine,
+      classes: state.classes.filter(c => c.sy === state.sy && c.learners.length).map(c => ({
+        id: c.id, grade: c.grade, section: c.section, adviser: c.adviser,
+        learners: sortLearners(c.learners).map(l => ({ id: l.id, name: fullName(l, state.settings), sex: l.sex || '', lrn: l.lrn || '' })),
+      })),
       passages: (list || state.passages || []).map(p => {
         const words = passageWords(p.text);
         return {
@@ -486,9 +492,32 @@
       }),
     };
   }
+  // results recorded on the phone -> the learners' entries here
+  function importPhoneResults(state, json) {
+    if (!json || json.kind !== 'results' || !Array.isArray(json.results)) throw new Error('This is not a results file from the Phil-IRI Reader phone app.');
+    const learners = new Map();
+    for (const c of state.classes) for (const l of c.learners) learners.set(l.id, l);
+    let done = 0, missing = 0;
+    for (const r of json.results) {
+      if (!learners.has(r.learnerId) || !PERIODS.includes(r.period) || !LANGS.includes(r.language)) { missing++; continue; }
+      const cur = result(state, r.learnerId, r.period, r.language);
+      const patch = {};
+      if (r.type === 'gst') {
+        patch.gst = r.gst;
+      } else {
+        Object.assign(patch, { words: r.words, miscues: r.miscues, time: r.time, compCorrect: r.compCorrect, compTotal: r.compTotal });
+        if (r.level) patch.level = r.level;
+        if (r.level === 'Independent' && r.grade && !(+cur.indepGrade >= +r.grade)) patch.indepGrade = String(r.grade);
+      }
+      patch.phone = Object.assign({}, cur.phone, { [r.type || 'oral']: r });
+      setResult(state, r.learnerId, r.period, r.language, patch);
+      done++;
+    }
+    return { done, missing };
+  }
   // bring in a passages file (from another teacher or the phone): same id replaces, new ones are added
   function importPassages(state, json) {
-    if (!json || json.kind !== 'passages' || !Array.isArray(json.passages)) throw new Error('This is not a Phil-IRI passages file.');
+    if (!json || !['passages', 'phone'].includes(json.kind) || !Array.isArray(json.passages)) throw new Error('This is not a Phil-IRI passages file.');
     state.passages = state.passages || [];
     let added = 0, updated = 0;
     for (const x of json.passages) {
@@ -549,6 +578,6 @@
     fullName, sortLearners, result, setResult, computed,
     buildWrites, missingResults, groupLearners, sampleState,
     extraValue, withTotals, importFound, parseName, setExtra, singleValue,
-    passageWords, passageSentences, newPassage, newQuestion, passagePack, importPassages,
+    passageWords, passageSentences, newPassage, newQuestion, passagePack, importPassages, importPhoneResults,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

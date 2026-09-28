@@ -48,6 +48,7 @@ separately from templates, so it carries over to next year's template.
 | `app/js/data.js` | State, IndexedDB storage, learners/results, turning data into cell writes (`buildWrites`), importing learners from an already filled form, reading passages (word list, phone file) |
 | `app/js/doctext.js` | Text out of PDF (pdf.js), Word .docx and .txt for passages; refuses pictures and scanned PDFs |
 | `app/vendor/` | JSZip, pdf.js 3.11 (+ worker, Apache-2.0 licence) |
+| `phone/` | Phil-IRI Reader phone app (source only, see `phone/README.md`) |
 | `app/fonts.css`, `app/fonts/` | Lexend font kept inside the app (SIL OFL); the build turns it into data: URLs |
 | `app/js/app.js` | Screens: Fill in forms (pill tabs, controls row, entry table, details card, Save menu: whole file / only this form), Settings (school, classes, backup), Adjust (manual mapping). The older type-on-form/preview code is still there but unused |
 | `electron/` | Desktop shell: save dialog, "Open in Excel" |
@@ -138,27 +139,55 @@ Main screen now (all tested in headless Chromium with both JHS templates):
   - Lone page numbers are dropped, and a short first line becomes the title.
   - Pictures and scanned PDFs (no text) are refused on purpose. So are old
     .doc files, with a message to save them as .docx or PDF.
-- "Phone app › Save passages file for the phone" saves
-  `phil-iri-passages-<SY>.json`, made by `Data.passagePack`. Its fields are
-  `{app, kind:'passages', version:1, school, sy, passages[{..., text, words[], wordCount,
-  questions[{number, type, text, choices[], answer, expected}]}]}`.
+- The Phone app menu (on the Passages screen) has "Save file for the phone". It saves
+  `phil-iri-phone-<SY>.json`, made by `Data.passagePack`. The fields are:
+  `{app, kind:'phone', version:1, school, sy, rules, combine,
+  classes[{id, grade, section, adviser, learners[{id, name, sex, lrn}]}],
+  passages[{..., text, words[], wordCount, questions[{number, type, text, choices[], answer, expected}]}]}`.
   - `words` is the exact word list (`Data.passageWords`: apostrophes and
-    hyphens stay inside a word, e.g. "mag-aaral"). The phone app should use it
-    as-is when it follows the reading.
-  - The same file can be brought back in (`Data.importPassages`: the same id
-    replaces the passage, new ids are added).
-- Plan for the phone app (from the discussion):
-  - It follows the reading live on the phone and saves only the results, not
-    the voice.
-  - Speech recognition is guided by the passage.
-  - Each word gets a traffic light (green sure, red miscue, yellow "please
-    check"), followed by a quick check screen for the teacher.
-  - It keeps short clips of the unsure words only until the teacher checks
-    them.
-  - Before the test: a warm-up sentence and a noise check.
-  - Results are sent back to this desktop app.
+    hyphens stay inside a word, e.g. "mag-aaral").
+  - "Bring in a colleague's passages" reads the same file (`Data.importPassages`:
+    the same id replaces a passage, new ids are added).
+- "Bring in results from the phone" is in that menu and also in the More menu on
+  the forms screen. It uses `Data.importPhoneResults`.
+  - For each result it sets `level`, `words`, `miscues`, `time`, `compCorrect` and
+    `compTotal` (oral), or `gst` (GST).
+  - It raises `indepGrade` when the level is Independent.
+  - The full phone record is kept in `res.phone`.
+
+## Phone app: Phil-IRI Reader (`phone/`, third conversation)
+
+Read `phone/README.md`.
+- **Status:** the source code is written and tested in a headless browser with
+  simulated speech. The whole loop was tested:
+  - desktop → phone file → oral test → check → questions → result
+  - results file → desktop, where the right level is shown in the learner's row
+  - GST, and dark mode
+- **Not built on purpose.** The user asked for files only, because the app is
+  still changing. `npm install`, `npx cap add android` and the APK build have NOT
+  been run. There is no `android/` folder yet.
+  - Building here was also blocked: dl.google.com is denied by the
+    environment's network policy.
+- Plain web code with no bundler: `www/js/align.js` (reading engine),
+  `listen.js` (speech), `app.js` (screens), `sample.js`.
+  - The Capacitor 8 plugins used: speech-recognition, filesystem, share.
+    They are reached with `Capacitor.registerPlugin`.
+- How it follows the reading:
+  - A semi-global alignment of the heard words against the passage words, with
+    a band limit of 45 words around the diagonal.
+  - Sound-alike words are yellow (`SURE` 0.85, `CLOSE` 0.5). Two heard words can
+    match one passage word, and one heard word can match two.
+  - Insertions are classified as filler, repetition, self-correction or insertion.
+  - Title words read at the start are ignored.
+  - Tests: `node phone/tests/align.test.mjs`.
+- No voice is stored. Speech recognition restarts after pauses, and reading
+  stops by itself 2.5 s after the last word.
 
 Next steps:
+0. Phone app: the user will send updates. Later: `cd phone && npm install &&
+   npx cap add android`, add RECORD_AUDIO and the RecognitionService query to the
+   manifest, then build the APK (see `phone/README.md`). Test with real
+   children's voices, and tune the `align.js` thresholds.
 1. Test with the teacher's GST / other templates when they are sent.
 2. Move from Electron to Tauri for a much smaller download.
 3. Future: automatic names/data from other sources (e.g. SF1).

@@ -2789,11 +2789,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return { id: uid('p'), language: language || 'English', grade: '', set: 'A', type: 'oral', title: '', text: '', questions: [], updated: Date.now() };
   }
   function newQuestion() { return { id: uid('q'), type: 'Literal', text: '', choices: ['', '', '', ''], answer: null, expected: '' }; }
-  // the file the phone app reads: everything it needs to show, listen and check
+  // the file the phone app reads: passages to show, listen to and check, the
+  // class lists (so results come back to the right learner) and the scoring rules
   function passagePack(state, list) {
     return {
-      app: 'phil-iri-recorder', kind: 'passages', version: 1, exportedAt: new Date().toISOString(),
+      app: 'phil-iri-recorder', kind: 'phone', version: 1, exportedAt: new Date().toISOString(),
       school: { name: state.school.name, id: state.school.id }, sy: state.sy,
+      rules: state.settings.rules, combine: state.settings.combine,
+      classes: state.classes.filter(c => c.sy === state.sy && c.learners.length).map(c => ({
+        id: c.id, grade: c.grade, section: c.section, adviser: c.adviser,
+        learners: sortLearners(c.learners).map(l => ({ id: l.id, name: fullName(l, state.settings), sex: l.sex || '', lrn: l.lrn || '' })),
+      })),
       passages: (list || state.passages || []).map(p => {
         const words = passageWords(p.text);
         return {
@@ -2810,9 +2816,32 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }),
     };
   }
+  // results recorded on the phone -> the learners' entries here
+  function importPhoneResults(state, json) {
+    if (!json || json.kind !== 'results' || !Array.isArray(json.results)) throw new Error('This is not a results file from the Phil-IRI Reader phone app.');
+    const learners = new Map();
+    for (const c of state.classes) for (const l of c.learners) learners.set(l.id, l);
+    let done = 0, missing = 0;
+    for (const r of json.results) {
+      if (!learners.has(r.learnerId) || !PERIODS.includes(r.period) || !LANGS.includes(r.language)) { missing++; continue; }
+      const cur = result(state, r.learnerId, r.period, r.language);
+      const patch = {};
+      if (r.type === 'gst') {
+        patch.gst = r.gst;
+      } else {
+        Object.assign(patch, { words: r.words, miscues: r.miscues, time: r.time, compCorrect: r.compCorrect, compTotal: r.compTotal });
+        if (r.level) patch.level = r.level;
+        if (r.level === 'Independent' && r.grade && !(+cur.indepGrade >= +r.grade)) patch.indepGrade = String(r.grade);
+      }
+      patch.phone = Object.assign({}, cur.phone, { [r.type || 'oral']: r });
+      setResult(state, r.learnerId, r.period, r.language, patch);
+      done++;
+    }
+    return { done, missing };
+  }
   // bring in a passages file (from another teacher or the phone): same id replaces, new ones are added
   function importPassages(state, json) {
-    if (!json || json.kind !== 'passages' || !Array.isArray(json.passages)) throw new Error('This is not a Phil-IRI passages file.');
+    if (!json || !['passages', 'phone'].includes(json.kind) || !Array.isArray(json.passages)) throw new Error('This is not a Phil-IRI passages file.');
     state.passages = state.passages || [];
     let added = 0, updated = 0;
     for (const x of json.passages) {
@@ -2873,7 +2902,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     fullName, sortLearners, result, setResult, computed,
     buildWrites, missingResults, groupLearners, sampleState,
     extraValue, withTotals, importFound, parseName, setExtra, singleValue,
-    passageWords, passageSentences, newPassage, newQuestion, passagePack, importPassages,
+    passageWords, passageSentences, newPassage, newQuestion, passagePack, importPassages, importPhoneResults,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -3296,6 +3325,7 @@ window.SAMPLE_TEMPLATES = {
           <label class="field"><span>Printing</span><select id="pg-fit">${options(FIT_OPTIONS, fitVal)}</select></label>
           <label class="field"><span>Orientation</span><select id="pg-orient">${options([['', 'As in the form'], ['portrait', 'Portrait'], ['landscape', 'Landscape']], ui.page.orient || '')}</select></label>
           <label class="field"><span>Paper</span><select id="pg-paper">${options(PAPER, ui.page.paper || '')}</select></label>
+          <span class="btn file-btn">Bring in results from the phone…<input type="file" class="phone-results" accept=".json,application/json"></span>
           <button class="btn" type="button" data-act="open-sheet" data-tpl="${f.t.id}" data-i="${f.i}">Adjust how this form is read</button>
           <button class="btn danger" type="button" data-act="del-tpl" data-tpl="${f.t.id}">Remove this file</button>
         </div>
@@ -4034,9 +4064,10 @@ window.SAMPLE_TEMPLATES = {
         <details class="fb-more">
           <summary class="btn">Phone app<span class="caret" aria-hidden="true"></span></summary>
           <div class="fb-menu stack">
-            <button class="btn" type="button" data-act="export-passages">Save passages file for the phone</button>
-            <span class="btn file-btn">Bring in a passages file…<input type="file" id="passages-file" accept=".json,application/json"></span>
-            <p class="muted small">The file holds every passage in both languages, its words and its questions. Copy it to the phone app. A passages file from a colleague can be brought in here too.</p>
+            <button class="btn" type="button" data-act="export-passages">Save file for the phone</button>
+            <span class="btn file-btn">Bring in results from the phone…<input type="file" class="phone-results" accept=".json,application/json"></span>
+            <span class="btn file-btn">Bring in a colleague’s passages…<input type="file" id="passages-file" accept=".json,application/json"></span>
+            <p class="muted small">The file for the phone holds every passage in both languages with its words and questions, your class lists and the scoring rules. Open it in the Phil-IRI Reader app. The phone sends back a results file; bring it in here.</p>
           </div>
         </details>
         <span class="btn file-btn">Bring in from PDF or Word…<input type="file" class="passage-doc" accept="${DOC_ACCEPT}"></span>
@@ -4212,8 +4243,9 @@ window.SAMPLE_TEMPLATES = {
     const list = passageList().filter(p => p.text.trim());
     if (!list.length) { toast('Add a passage with its text first.'); return; }
     const pack = Data.passagePack(state, list.slice().sort((a, b) => a.language.localeCompare(b.language) || byGradeSet(a, b)));
-    const r = await saveBlob(`phil-iri-passages-${state.sy}.json`, new Blob([JSON.stringify(pack, null, 1)], { type: 'application/json' }));
-    if (r.status === 'saved') toast(`Saved ${list.length} passage${list.length === 1 ? '' : 's'} for the phone app.`);
+    const r = await saveBlob(`phil-iri-phone-${state.sy}.json`, new Blob([JSON.stringify(pack, null, 1)], { type: 'application/json' }));
+    const nl = pack.classes.reduce((a, c) => a + c.learners.length, 0);
+    if (r.status === 'saved') toast(`Saved ${list.length} passage${list.length === 1 ? '' : 's'} and ${nl} learner${nl === 1 ? '' : 's'} for the phone app.`);
   }
   function currentPassage() { return passageList().find(x => x.id === ui.passageId) || null; }
   // typing: store as the teacher types, without redrawing (keeps the cursor in place)
@@ -4460,6 +4492,14 @@ window.SAMPLE_TEMPLATES = {
 
   document.addEventListener('change', async (e) => {
     const t = e.target;
+    if (t.classList && t.classList.contains('phone-results') && t.files[0]) {
+      try {
+        const r = Data.importPhoneResults(state, JSON.parse(await t.files[0].text()));
+        save(); render();
+        toast(`Brought in ${r.done} result${r.done === 1 ? '' : 's'} from the phone${r.missing ? `. ${r.missing} could not be matched to a learner here` : ''}.`);
+      } catch (err) { toast(err.message || 'That file could not be read.'); }
+      t.value = ''; return;
+    }
     if (ui.view === 'passages') {
       if (t.dataset.pf || t.dataset.qf) {
         passageInput(t);
