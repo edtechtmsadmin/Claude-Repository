@@ -322,6 +322,8 @@
             ...Array.from(ddoc.getElementsByTagNameNS(NS_XDR, 'oneCellAnchor')),
           ];
           for (const a of anchors) {
+            const cnv = a.getElementsByTagNameNS(NS_XDR, 'cNvPr')[0];
+            if (cnv && (cnv.getAttribute('hidden') === '1' || cnv.getAttribute('hidden') === 'true')) continue;
             const blip = a.getElementsByTagNameNS(NS_A, 'blip')[0];
             if (!blip) continue;
             const target = drels[blip.getAttributeNS(NS_R, 'embed')];
@@ -571,8 +573,13 @@
     if (override.orientation) pg.orientation = override.orientation;
     if (override.paper) pg.paperSize = override.paper;
     // fit 'page': whole form on one page; 'width': shrink only a form that is too wide
+    if (override.margins) pg.margins = override.margins;
+    if (override.hCenter) pg.hCenter = true;
+    if (override.noBreaks) { pg.rowBreaks = []; pg.colBreaks = []; }
+    if (override.auto) pg.scale = 100;
     if (override.fit === 'page') { pg.fitToPage = true; pg.fitToWidth = 1; pg.fitToHeight = 1; }
-    else if (override.fit && needsFit(sheet, pg)) { pg.fitToPage = true; pg.fitToWidth = 1; pg.fitToHeight = 0; }
+    else if (override.fit && (override.auto || needsFit(sheet, pg))) { pg.fitToPage = true; pg.fitToWidth = 1; pg.fitToHeight = 0; }
+    else if (override.auto) pg.fitToPage = false;
     let [w, h] = PAPER_IN[pg.paperSize] || PAPER_IN[9];
     if (pg.orientation === 'landscape') [w, h] = [h, w];
     const DPI = 96;
@@ -580,7 +587,7 @@
     const mg = pg.margins;
     const printW = pageW - (mg.left + mg.right) * DPI;
     const printH = pageH - (mg.top + mg.bottom) * DPI;
-    const area = printArea(sheet);
+    const area = override.area || printArea(sheet);
     const cw = [], rh = [];
     let totalW = 0, totalH = 0;
     for (let c = area.c1; c <= area.c2; c++) { cw[c] = colPx(sheet, c); totalW += cw[c]; }
@@ -622,14 +629,87 @@
     for (let c = area.c1; c <= area.c2; c++) totalW += colPx(sheet, c);
     return totalW * (pg.scale || 100) / 100 > printW + 1;
   }
+  /* Where the real form is: cells with text or borders, merged boxes with
+   * text, pictures. Fill-only cells and far-away leftovers are ignored. */
+  function contentArea(sheet) {
+    if (sheet._content) return sheet._content;
+    const rows = new Map(), cols = new Map();
+    const bump = (m, k, n = 1) => m.set(k, (m.get(k) || 0) + n);
+    const bordered = st => st && st.border && (st.border.left || st.border.right || st.border.top || st.border.bottom);
+    for (const cell of sheet.cells.values()) {
+      const has = (cell.value != null && cell.value !== '') || cell.formula || bordered(sheet.styles.xfs[cell.s]);
+      if (!has) continue;
+      bump(rows, cell.r); bump(cols, cell.c);
+    }
+    for (const m of sheet.merges) {
+      const tl = sheet.cells.get(makeRef(m.r1, m.c1));
+      if (!tl || tl.value == null || tl.value === '') continue;
+      bump(rows, m.r2); bump(cols, m.c2);
+    }
+    for (const im of sheet.images) {
+      if (!im.from) continue;
+      const to = im.to || im.from;
+      bump(rows, im.from.row + 1, 5); bump(rows, to.row + 1, 5); bump(cols, im.from.col + 1, 5); bump(cols, to.col + 1, 5);
+    }
+    // cut off small leftovers after a wide empty gap
+    const trim = (m, gap) => {
+      const keys = [...m.keys()].sort((a, b) => a - b);
+      if (!keys.length) return [1, 1];
+      const total = keys.reduce((a, k) => a + m.get(k), 0);
+      let end = keys[keys.length - 1];
+      for (let i = keys.length - 1; i > 0; i--) {
+        if (keys[i] - keys[i - 1] > gap) {
+          const tail = keys.slice(i).reduce((a, k) => a + m.get(k), 0);
+          if (tail < total * 0.1) end = keys[i - 1];
+        }
+      }
+      return [keys[0], end];
+    };
+    const [, r2] = trim(rows, 12);
+    const [, c2] = trim(cols, 5);
+    return (sheet._content = { r1: 1, c1: 1, r2: Math.max(1, r2), c2: Math.max(1, c2) });
+  }
+
+  /* Best way to print this form: try portrait and landscape, fit the width,
+   * pick the one where the form comes out biggest, and put a form that only
+   * just spills over onto one page. */
+  function autoPage(sheet, o) {
+    const area = contentArea(sheet);
+    const m0 = sheet.page.margins;
+    const ok = v => v >= 0.25 && v <= 0.8;
+    const margins = [m0.left, m0.right, m0.top, m0.bottom].every(ok) ? m0 : { left: 0.5, right: 0.5, top: 0.5, bottom: 0.5 };
+    const base = Object.assign({}, o, { auto: true, area, margins, hCenter: true, noBreaks: true, fit: 'width', paper: o.paper || sheet.page.paperSize || 9 });
+    // size of the form and of the printable part of the paper, per orientation
+    let W = 0, H = 0;
+    for (let c = area.c1; c <= area.c2; c++) W += colPx(sheet, c);
+    for (let r = area.r1; r <= area.r2; r++) H += rowPx(sheet, r);
+    let [pw, ph] = PAPER_IN[base.paper] || PAPER_IN[9];
+    const opts = (o.orientation ? [o.orientation] : ['portrait', 'landscape']).map(orientation => {
+      const [w, h] = orientation === 'landscape' ? [ph, pw] : [pw, ph];
+      const printW = (w - margins.left - margins.right) * 96, printH = (h - margins.top - margins.bottom) * 96;
+      return { orientation, sWidth: Math.min(1, printW / W), sPage: Math.min(1, printW / W, printH / H) };
+    });
+    // 1) the whole form on one page, if it stays readable (half size or more)
+    const onePage = opts.filter(x => x.sPage >= 0.5).sort((x, y) => y.sPage - x.sPage)[0];
+    let out;
+    if (onePage) out = Object.assign({}, base, { orientation: onePage.orientation, fit: onePage.sPage < onePage.sWidth - 0.001 ? 'page' : 'width' });
+    else {
+      // 2) otherwise fit the width, biggest print wins, then fewer pages
+      const ranked = opts.map(x => Object.assign(x, { pages: paginate(sheet, Object.assign({}, base, { orientation: x.orientation })).pages.length }))
+        .sort((x, y) => (Math.abs(y.sWidth - x.sWidth) > 0.03 ? y.sWidth - x.sWidth : x.pages - y.pages));
+      out = Object.assign({}, base, { orientation: ranked[0].orientation, fit: 'width' });
+    }
+    return out;
+  }
+
   /* The page options to write into the saved file (same rule as the screen).
    * fit 'auto': fit to width, and if only a little would spill onto an extra
    * page, fit the whole form on one page instead. */
   function effectivePage(sheet, override) {
     const o = Object.assign({}, override);
     if (o.fit === true) o.fit = 'width';
-    if (o.fit === 'auto' && sheet.page.hasSetup && !o.orientation && !o.paper) o.fit = null; // keep the form's own print settings
-    if (o.fit === 'auto') {
+    if (o.fit === 'auto') return autoPage(sheet, o);
+    if (o.fit === 'autoOld') {
       const lay = paginate(sheet, Object.assign({}, o, { fit: 'width' }));
       o.fit = 'width';
       if (lay.pages.length === 2) {
@@ -777,6 +857,7 @@
       if (m) wbXml = wbXml.slice(0, m.index + m[0].length) + `<${pre}calcPr fullCalcOnLoad="1"/>` + wbXml.slice(m.index + m[0].length);
     }
 
+    if (options.page && options.page.area) wbXml = await setPrintArea(zip, wbXml, options.pageSheet || options.onlySheet, options.page.area);
     if (options.onlySheet) wbXml = await showOnlySheet(zip, wbXml, options.onlySheet);
     zip.file('xl/workbook.xml', wbXml);
 
@@ -791,34 +872,67 @@
    * fit: scale to one page wide; orientation: 'portrait'|'landscape'|null
    * paper: Excel paperSize number or null (keep the template's)
    */
+  // order of the page elements inside a worksheet (Excel refuses files with them out of order)
+  const WS_ORDER = ['sheetCalcPr', 'sheetProtection', 'protectedRanges', 'scenarios', 'autoFilter', 'sortState', 'dataConsolidate', 'customSheetViews',
+    'mergeCells', 'phoneticPr', 'conditionalFormatting', 'dataValidations', 'hyperlinks', 'printOptions', 'pageMargins', 'pageSetup', 'headerFooter',
+    'rowBreaks', 'colBreaks', 'customProperties', 'cellWatches', 'ignoredErrors', 'smartTags', 'drawing', 'legacyDrawing', 'legacyDrawingHF', 'drawingHF',
+    'picture', 'oleObjects', 'controls', 'webPublishItems', 'tableParts', 'extLst'];
+  function ensureEl(doc, root, name) {
+    let node = kid(root, name);
+    if (node) return node;
+    node = doc.createElementNS(NS, prefixOf(root) + name);
+    const later = WS_ORDER.slice(WS_ORDER.indexOf(name) + 1);
+    const anchor = Array.from(root.children).find(ch => later.includes(ch.localName));
+    if (anchor) root.insertBefore(node, anchor); else root.appendChild(node);
+    return node;
+  }
+
+  /* Print options for the filled sheet, the same ones the screen uses:
+   * {fit: 'width'|'page'|null, orientation, paper, margins, hCenter, noBreaks, auto} */
   function applyPage(doc, page) {
     const root = doc.documentElement;
-    const p = prefixOf(root);
-    if (page.fit) {
-      let sheetPr = kid(root, 'sheetPr');
-      if (!sheetPr) { sheetPr = doc.createElementNS(NS, p + 'sheetPr'); root.insertBefore(sheetPr, root.firstElementChild); }
+    if (!page.fit && !page.orientation && !page.paper && !page.auto) return;
+    let sheetPr = kid(root, 'sheetPr');
+    if (page.fit || page.auto) {
+      if (!sheetPr) { sheetPr = doc.createElementNS(NS, prefixOf(root) + 'sheetPr'); root.insertBefore(sheetPr, root.firstElementChild); }
       let psp = kid(sheetPr, 'pageSetUpPr');
-      if (!psp) { psp = doc.createElementNS(NS, p + 'pageSetUpPr'); sheetPr.appendChild(psp); }
-      psp.setAttribute('fitToPage', '1');
-    }
-    if (!page.fit && !page.orientation && !page.paper) return;
-    let ps = kid(root, 'pageSetup');
-    if (!ps) {
-      ps = doc.createElementNS(NS, p + 'pageSetup');
-      const after = kid(root, 'pageMargins') || kid(root, 'printOptions');
-      const next = after ? after.nextElementSibling : null;
-      const anchor = next || ['headerFooter', 'rowBreaks', 'colBreaks', 'drawing', 'legacyDrawing', 'tableParts', 'extLst'].map(n => kid(root, n)).find(Boolean);
-      if (anchor) root.insertBefore(ps, anchor); else root.appendChild(ps);
-      if (!after) {
-        const pm = doc.createElementNS(NS, p + 'pageMargins');
-        for (const [k, v] of [['left', '0.5'], ['right', '0.5'], ['top', '0.5'], ['bottom', '0.5'], ['header', '0.3'], ['footer', '0.3']]) pm.setAttribute(k, v);
-        root.insertBefore(pm, ps);
+      if (!psp) {
+        psp = doc.createElementNS(NS, prefixOf(root) + 'pageSetUpPr');
+        const outline = kid(sheetPr, 'outlinePr') || kid(sheetPr, 'tabColor');
+        if (outline && outline.nextSibling) sheetPr.insertBefore(psp, outline.nextSibling); else sheetPr.appendChild(psp);
       }
+      psp.setAttribute('fitToPage', page.fit ? '1' : '0');
     }
+    if (page.hCenter) ensureEl(doc, root, 'printOptions').setAttribute('horizontalCentered', '1');
+    const pm = ensureEl(doc, root, 'pageMargins');
+    const mg = page.margins || {};
+    for (const [k, v] of [['left', mg.left ?? 0.5], ['right', mg.right ?? 0.5], ['top', mg.top ?? 0.5], ['bottom', mg.bottom ?? 0.5], ['header', 0.3], ['footer', 0.3]]) {
+      if (page.margins || !pm.getAttribute(k)) pm.setAttribute(k, String(v));
+    }
+    const ps = ensureEl(doc, root, 'pageSetup');
     if (page.fit) { ps.setAttribute('fitToWidth', '1'); ps.setAttribute('fitToHeight', page.fit === 'page' ? '1' : '0'); }
+    if (page.auto) ps.removeAttribute('scale');
     if (page.orientation) ps.setAttribute('orientation', page.orientation);
     if (page.paper) ps.setAttribute('paperSize', String(page.paper));
     else if (!ps.getAttribute('paperSize')) ps.setAttribute('paperSize', '9');
+    if (page.noBreaks) for (const n of ['rowBreaks', 'colBreaks']) { const b2 = kid(root, n); if (b2) root.removeChild(b2); }
+  }
+
+  // limit printing to the form itself (a print area on this sheet)
+  async function setPrintArea(zip, wbXml, sheetPath, area) {
+    const rels = await readRels(zip, 'xl/workbook.xml');
+    const doc = parseXml(wbXml);
+    const sheets = els(doc, 'sheet');
+    const idx = sheets.findIndex(sh => (rels[sh.getAttributeNS(NS_R, 'id')] || {}).target === sheetPath);
+    if (idx < 0) return wbXml;
+    const name = sheets[idx].getAttribute('name').replace(/'/g, "''");
+    const ref = `'${name}'!$${numToCol(area.c1)}$${area.r1}:$${numToCol(area.c2)}$${area.r2}`;
+    const pre = (/<(\w+:)?workbook\b/.exec(wbXml) || [])[1] || '';
+    const tag = `<${pre}definedName name="_xlnm.Print_Area" localSheetId="${idx}">${ref}</${pre}definedName>`;
+    const existing = new RegExp(`<${pre}definedName\\b[^>]*name="_xlnm\\.Print_Area"[^>]*localSheetId="${idx}"[^>]*>[^<]*</${pre}definedName>|<${pre}definedName\\b[^>]*localSheetId="${idx}"[^>]*name="_xlnm\\.Print_Area"[^>]*>[^<]*</${pre}definedName>`);
+    if (existing.test(wbXml)) return wbXml.replace(existing, tag);
+    if (new RegExp(`</${pre}definedNames>`).test(wbXml)) return wbXml.replace(new RegExp(`</${pre}definedNames>`), tag + `</${pre}definedNames>`);
+    return wbXml.replace(new RegExp(`</${pre}sheets>`), m => m + `<${pre}definedNames>${tag}</${pre}definedNames>`);
   }
 
   async function showOnlySheet(zip, wbXml, keepPath) {

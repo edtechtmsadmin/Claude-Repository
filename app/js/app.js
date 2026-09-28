@@ -218,8 +218,8 @@
           <details class="fb-more">
             <summary class="btn">More</summary>
             <div class="fb-menu stack">
-              <label class="field"><span>Size on paper</span><select id="pg-fit">${options([['auto', 'Automatic: the form’s own settings'], ['page', 'Whole form on one page'], ['width', 'Fit to page width'], ['none', 'As set in the form']], fitVal)}</select></label>
-              <label class="field"><span>Orientation</span><select id="pg-orient">${options([['', 'As in form'], ['portrait', 'Portrait'], ['landscape', 'Landscape']], ui.page.orient ?? ((kind === 'grade' || kind === 'school') ? 'landscape' : ''))}</select></label>
+              <label class="field"><span>Size on paper</span><select id="pg-fit">${options([['auto', 'Automatic: best fit (recommended)'], ['page', 'Whole form on one page'], ['width', 'Fit to page width'], ['none', 'As set in the form']], fitVal)}</select></label>
+              <label class="field"><span>Orientation</span><select id="pg-orient">${options([['', 'Automatic'], ['portrait', 'Portrait'], ['landscape', 'Landscape']], ui.page.orient || '')}</select></label>
               <label class="field"><span>Paper</span><select id="pg-paper">${options(PAPER, ui.page.paper || '')}</select></label>
               ${kind === 'learner' ? '<button class="btn" type="button" data-act="save-all">Save all learners (.zip)</button>' : ''}
               ${kind === 'class' ? `<button class="btn" type="button" data-act="toggle-table">${ui.tableView ? 'Type on the form' : 'Type in a table instead'}</button>` : ''}
@@ -592,7 +592,7 @@
   function pageSetup(f) {
     const kind = f.m.kind;
     const fit = ui.page.fit === false ? 'none' : ui.page.fit === true || ui.page.fit == null ? 'auto' : ui.page.fit;
-    return { fit: fit === 'none' ? null : fit, orientation: (ui.page.orient ?? ((kind === 'grade' || kind === 'school') ? 'landscape' : '')) || null, paper: ui.page.paper ? +ui.page.paper : null };
+    return { fit: fit === 'none' ? null : fit, orientation: ui.page.orient || (fit === 'auto' ? null : (kind === 'grade' || kind === 'school') ? 'landscape' : null), paper: ui.page.paper ? +ui.page.paper : null };
   }
   // shrink the pages so a whole page width fits the screen
   function fitZoom(box) {
@@ -620,7 +620,7 @@
       if (seq !== previewSeq || !res) return;
       const warn = [...res.warnings];
       if (res.missing.length) warn.unshift(`${res.missing.length} learner(s) have no reading level yet: ${res.missing.slice(0, 5).map(l => Data.fullName(l, state.settings)).join('; ')}${res.missing.length > 5 ? '…' : ''}`);
-      $('#pr-warn').innerHTML = warn.length ? `<div class="notice"><b>Check before printing</b><ul>${warn.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>` : '';
+      $('#pr-warn').innerHTML = warn.length ? `<details class="warn-line"><summary>${warn.length} thing${warn.length === 1 ? '' : 's'} to check before printing</summary><ul>${warn.map(w => `<li>${esc(w)}</li>`).join('')}</ul></details>` : '';
       $('#save-note').textContent = res.files.length > 1 ? `${res.files.length} files will be saved${res.ctx.kind === 'learner' ? ' (in a .zip)' : ''}.` : '';
       if (!res.files.length) { box.innerHTML = '<div class="empty">Nothing to show yet.</div>'; return; }
       const wb = await XL.loadWorkbook(res.files[0].data.slice(0));
