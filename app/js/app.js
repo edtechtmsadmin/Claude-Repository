@@ -1079,7 +1079,8 @@
     if (t.id === 'pg-fit' || t.id === 'pg-orient' || t.id === 'pg-paper') {
       if (t.id === 'pg-fit') ui.page.fit = t.value; else if (t.id === 'pg-orient') ui.page.orient = t.value; else ui.page.paper = t.value;
       const f = currentForm();
-      if (f && (f.m.kind === 'none' || f.m.kind === 'learner')) renderFormView(f); else refreshPreview();
+      if ($('#formview')) renderFormView(f);
+      if ($('#preview') && !$('#preview').hidden) refreshPreview();
       return;
     }
     if (t.id === 'tpl-file' && t.files[0]) { const file = t.files[0]; await importTemplate(await file.arrayBuffer(), file.name); return; }

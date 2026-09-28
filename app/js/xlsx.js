@@ -324,6 +324,8 @@
           for (const a of anchors) {
             const cnv = a.getElementsByTagNameNS(NS_XDR, 'cNvPr')[0];
             if (cnv && (cnv.getAttribute('hidden') === '1' || cnv.getAttribute('hidden') === 'true')) continue;
+            const cd = a.getElementsByTagNameNS(NS_XDR, 'clientData')[0];
+            if (cd && (cd.getAttribute('fPrintsWithSheet') === '0' || cd.getAttribute('fPrintsWithSheet') === 'false')) continue;
             const blip = a.getElementsByTagNameNS(NS_A, 'blip')[0];
             if (!blip) continue;
             const target = drels[blip.getAttributeNS(NS_R, 'embed')];
@@ -397,7 +399,22 @@
   function rowPx(sheet, r) {
     const ri = sheet.rowsInfo[r];
     if (ri && ri.hidden) return 0;
-    const pt = ri && ri.ht != null ? ri.ht : sheet.defaultRowHeight;
+    let pt = ri && ri.ht != null ? ri.ht : null;
+    if (pt == null) {
+      // Excel fits the row to its largest font
+      sheet._autoRow = sheet._autoRow || {};
+      if (sheet._autoRow[r] == null) {
+        let maxSize = 0;
+        for (let c = 1; c <= Math.min(sheet.maxC, 100); c++) {
+          const cell = sheet.cells.get(makeRef(r, c));
+          if (!cell || cell.value == null || cell.value === '') continue;
+          const f = sheet.styles.xfs[cell.s] && sheet.styles.xfs[cell.s].font;
+          if (f && f.size > maxSize) maxSize = f.size;
+        }
+        sheet._autoRow[r] = Math.max(sheet.defaultRowHeight, maxSize ? Math.ceil(maxSize * 1.36) : 0);
+      }
+      pt = sheet._autoRow[r];
+    }
     return Math.round(pt * 4 / 3);
   }
   function styleOf(sheet, r, c) {
@@ -636,9 +653,12 @@
     const rows = new Map(), cols = new Map();
     const bump = (m, k, n = 1) => m.set(k, (m.get(k) || 0) + n);
     const bordered = st => st && st.border && (st.border.left || st.border.right || st.border.top || st.border.bottom);
+    const white = st => st && st.font && st.font.color && /^#?F{6}$/i.test(st.font.color.replace('#', ''));
     for (const cell of sheet.cells.values()) {
-      const has = (cell.value != null && cell.value !== '') || cell.formula || bordered(sheet.styles.xfs[cell.s]);
-      if (!has) continue;
+      if (colPx(sheet, cell.c) === 0 || rowPx(sheet, cell.r) === 0) continue; // hidden
+      const st = sheet.styles.xfs[cell.s];
+      const shows = cell.value != null && cell.value !== '' && !white(st);
+      if (!shows && !bordered(st)) continue;
       bump(rows, cell.r); bump(cols, cell.c);
     }
     for (const m of sheet.merges) {
@@ -665,8 +685,10 @@
       }
       return [keys[0], end];
     };
-    const [, r2] = trim(rows, 12);
-    const [, c2] = trim(cols, 5);
+    let [, r2] = trim(rows, 12);
+    let [, c2] = trim(cols, 5);
+    // a print area chosen by the template maker limits it further
+    if (sheet.printArea) { r2 = Math.min(r2, sheet.printArea.r2); c2 = Math.min(c2, sheet.printArea.c2); }
     return (sheet._content = { r1: 1, c1: 1, r2: Math.max(1, r2), c2: Math.max(1, c2) });
   }
 
@@ -689,16 +711,10 @@
       const printW = (w - margins.left - margins.right) * 96, printH = (h - margins.top - margins.bottom) * 96;
       return { orientation, sWidth: Math.min(1, printW / W), sPage: Math.min(1, printW / W, printH / H) };
     });
-    // 1) the whole form on one page, if it stays readable (half size or more)
-    const onePage = opts.filter(x => x.sPage >= 0.5).sort((x, y) => y.sPage - x.sPage)[0];
-    let out;
-    if (onePage) out = Object.assign({}, base, { orientation: onePage.orientation, fit: onePage.sPage < onePage.sWidth - 0.001 ? 'page' : 'width' });
-    else {
-      // 2) otherwise fit the width, biggest print wins, then fewer pages
-      const ranked = opts.map(x => Object.assign(x, { pages: paginate(sheet, Object.assign({}, base, { orientation: x.orientation })).pages.length }))
-        .sort((x, y) => (Math.abs(y.sWidth - x.sWidth) > 0.03 ? y.sWidth - x.sWidth : x.pages - y.pages));
-      out = Object.assign({}, base, { orientation: ranked[0].orientation, fit: 'width' });
-    }
+    // portrait for a form taller than wide (or nearly square), landscape for a wide one
+    const orientation = o.orientation || (W > H * 1.15 ? 'landscape' : 'portrait');
+    const pick = opts.find(x => x.orientation === orientation) || opts[0];
+    const out = Object.assign({}, base, { orientation: pick.orientation, fit: pick.sPage >= 0.5 && pick.sPage < pick.sWidth - 0.001 ? 'page' : 'width' });
     return out;
   }
 
